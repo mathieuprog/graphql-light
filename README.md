@@ -23,6 +23,8 @@ Your objects must have global unique identifiers (e.g. UUIDv4). There is no plan
 
 Objects must have an `id` property storing their UUID.
 
+The GraphQL server must return the `id` and `__typename` properties for every cacheable entity.
+
 ## Usage
 
 ### Instantiate and configure GraphQL Light's client
