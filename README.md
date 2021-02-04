@@ -6,6 +6,10 @@
 
 Entities are normalized and cached into a global store.
 
+### Subscribe to data updates
+
+You subscribe to queries : receive any updates on the fetched data after the initial fetch.
+
 ### Explicitness
 
 The difference with other clients (such as Apollo) is that this library requires you to write code for each query that
