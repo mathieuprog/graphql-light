@@ -1,0 +1,24 @@
+import store from './store';
+
+export default class Mutation {
+  // transformer: function transforming data before storage
+  constructor(client, queryDocument, transformer) {
+    this.client = client;
+    this.queryDocument = queryDocument;
+    this.transformer = transformer;
+  }
+
+  async mutate(variables, callback = _ => true) {
+    let data = await this.client.request(this.queryDocument, variables || {});
+
+    callback(data);
+
+    const transformedData = this.transformer(data, variables);
+
+    if (transformedData) {
+      store.set(transformedData);
+    }
+
+    return data;
+  }
+}
