@@ -1,6 +1,7 @@
 {
   "name": "graphql-light",
   "version": "0.0.1",
+  "description": "A simple GraphQL client",
   "scripts": {
     "test": "jest"
   },
@@ -11,5 +12,20 @@
   },
   "dependencies": {
     "ky": "^0.26.0"
-  }
+  },
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mathieuprog/graphql-light.git"
+  },
+  "keywords": [
+    "graphql",
+    "graphql-client"
+  ],
+  "author": "Mathieu Decaffmeyer",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/mathieuprog/graphql-light/issues"
+  },
+  "homepage": "https://github.com/mathieuprog/graphql-light#readme"
 }
