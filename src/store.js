@@ -2,7 +2,7 @@ import normalizeAndStore from './normalize_and_store';
 
 let entities;
 
-globalThis.myStore = {
+globalThis.graphQLCache = {
   entities() { return entities }
 };
 
