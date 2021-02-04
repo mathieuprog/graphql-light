@@ -1,9 +1,17 @@
 # GraphQL Light - a simple GraphQL client
 
-GraphQL Light is a GraphQL client. The difference with other clients (such as Apollo) is that this library requires you
-to write code for each query that instructs how to update the cache, retrieve cached data, etc.
+## Features
 
-More code is needed to configure your GraphQL queries, but in return  you also have way more understanding and full
+### Caching of normalized entities
+
+Entities are normalized and cached into a global store.
+
+### Explicitness
+
+The difference with other clients (such as Apollo) is that this library requires you to write code for each query that
+tells what to update in the cache, what data to retrieve for a query, etc.
+
+More code is then needed to configure your GraphQL queries, but in return you also have way more understanding and full
 control over the way the data is processed and cached, as you code it yourself.
 
 If you feel that Apollo is like a black box that often doesn't work the way you expect, is too complex, or is just too
@@ -64,6 +72,7 @@ It is important to always query the `__typename` and the `id` for every object t
 ### Create a Query instance
 
 ```javascript
+import { Query } from 'graphql-light';
 import client from './client';
 import ARTICLES_QUERY from './queries/articles';
 
@@ -86,8 +95,6 @@ Another function can optionally be passed as a fourth argument allowing to apply
 data into the cache. For example, if you want to convert datetime strings to `PlainDateTime` objects:
 
 ```javascript
-import { Query } from 'graphql-light';
-
 const articlesQuery = new Query(client, ARTICLES_QUERY, (entities, variables) => {
   const { userId } = variables;
 
@@ -110,6 +117,9 @@ store and to transform data before storage.
 
 ```javascript
 import { articlesQuery } from '../graphql';
+
+// import the callback function from your framework that is fired when the component unmounts
+// this example uses Svelte
 import { onDestroy } from 'svelte';
 
 const unsubscribers = [];
@@ -157,6 +167,8 @@ You can create a `DerivedQuery` to retrieve derived data from the response of th
 we want to retrieve all the locations that can already be fetched through the organization query above.
 
 ```javascript
+import { DerivedQuery } from 'graphql-light';
+
 const locationsQuery = new DerivedQuery(
   [
     { query: organizationsQuery, takeVariables: ({ organization }) => ({ ...organization }) }
@@ -277,6 +289,8 @@ createArticleMutation
 When an entity has been deleted, you should also remove it from the cache.
 
 ```javascript
+import { Mutation } from 'graphql-light';
+
 const deleteArticleMutation = new Mutation(client, DELETE_ARTICLE_MUTATION, ({ deleteArticle: data }) => {
   if (data.__typename !== 'DeleteArticleSuccess') {
     return null;
@@ -304,6 +318,12 @@ the deleted article should also be removed from that list. This should be done f
 article.
 
 If you only want to remove an entity from a list, without deleting the entity, use `__unlink` and set it to `true`.
+
+### Inspect the global store (cache)
+
+```javascript
+graphQLCache.entities()
+```
 
 ## Installation
 
