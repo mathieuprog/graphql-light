@@ -1,5 +1,6 @@
 import createProxy from './create_proxy';
 import normalizeAndStore from './normalize_and_store';
+import store from './store';
 
 const address1 = {
   id: 'address1',
@@ -62,9 +63,8 @@ const article4 = {
   title: 'Bar'
 };
 
-let store;
 beforeEach(() => {
-  store = {
+  store.initialize({
     [person1.id]: {
       ...person1,
       articles: [
@@ -106,7 +106,7 @@ beforeEach(() => {
     [address1.id]: address1,
     [phone1.id]: phone1,
     [phone2.id]: phone2
-  };
+  });
 });
 
 test('normalize and store', () => {
@@ -160,7 +160,9 @@ test('normalize and store', () => {
     arrayOfPrimitives: [1, 2]
   };
 
-  normalizeAndStore(store, entity);
+  normalizeAndStore(entity);
+
+  const store = getGraphQLCache();
 
   expect(Object.keys(store).length).toBe(9);
   expect(store['person1'].articles.length).toBe(2);

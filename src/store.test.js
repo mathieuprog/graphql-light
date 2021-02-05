@@ -54,7 +54,7 @@ const denormalizedData = {
   }
 };
 
-store.set(denormalizedData);
+store.store(denormalizedData);
 
 test('store', () => {
   const subscriber = jest.fn();
@@ -63,17 +63,17 @@ test('store', () => {
 
   expect(subscriber).toHaveBeenCalledTimes(1);
 
-  store.set({ id: 1, __typename: 'Person', name: 'Jérôme' });
+  store.store({ id: 1, __typename: 'Person', name: 'Jérôme' });
 
   expect(subscriber).toHaveBeenCalledTimes(2);
 
-  store.set({ id: 1, __typename: 'Person', name: 'John' });
+  store.store({ id: 1, __typename: 'Person', name: 'John' });
 
   expect(subscriber).toHaveBeenCalledTimes(3);
 
   unsubscribe();
 
-  store.set({ id: 1, __typename: 'Person', name: 'James' });
+  store.store({ id: 1, __typename: 'Person', name: 'James' });
 
   expect(subscriber).toHaveBeenCalledTimes(3);
 });

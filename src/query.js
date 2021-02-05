@@ -75,7 +75,7 @@ export default class Query {
 
     data = this.transformer(data, variables);
     if (data) {
-      store.set(data);
+      store.store(data);
     }
 
     this.cache = this.cache.filter(v => !areObjectsEqual(v, variables));

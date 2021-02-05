@@ -16,7 +16,7 @@ export default class Mutation {
     const transformedData = this.transformer(data, variables);
 
     if (transformedData) {
-      store.set(transformedData);
+      store.store(transformedData);
     }
 
     return data;
