@@ -118,10 +118,6 @@ const articlesQuery = new Query(client, ARTICLES_QUERY, (entities, variables) =>
 });
 ```
 
-Notice how the library doesn't try to parse the GraphQL query string in order to deduce what needs to be returned, nor
-try to transform the server response automatically. Instead, you explicitly write the code to retrieve data from the
-store and to transform data before storage.
-
 ### Fetch data
 
 ```javascript
@@ -328,10 +324,40 @@ article.
 
 If you only want to remove an entity from a list, without deleting the entity, use `__unlink` and set it to `true`.
 
+### Global function to transform data before caching
+
+In the example below, we want to convert dates formatted as strings into datetime objects:
+
+```javascript
+import { setStoreConfig } from 'graphql-light';
+
+setStoreConfig({ transform: transformEntity });
+
+export function transformEntity(entity) {
+  switch (entity.__typename) {
+    case 'Article':
+      return transformArticle(entity);
+
+    case 'Comment':
+      return transformComment(entity);
+
+    default:
+      return entity;
+  }
+}
+
+function transformArticle(article) {
+  return {
+    ...article,
+    publishDate: Temporal.PlainDateTime.from(article.publishDate)
+  };
+}
+```
+
 ### Inspect the global store (cache)
 
 ```javascript
-graphQLCache.entities()
+getGraphQLCache()
 ```
 
 ## Installation
