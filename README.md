@@ -95,7 +95,10 @@ export default {
 
 A `Query` instance allows executing GraphQL requests through the `subscribe` function that it exposes (see below).
 
-The third argument passed to `Query`'s constructor is a function that retrieves the fetched data from the store.
+The third argument passed to `Query`'s constructor is a function that retrieves the fetched data from the store. It may
+seem unnecessary and redundant as the server did the same operation (fetched the data from the DB), however this is
+needed in order to subscribe to data updates in the store; whenever there is an update in the store, this code is
+re-executed, and if the data changed, the listener is called (see `subscribe` and its second argument below).
 
 Another function can optionally be passed as a fourth argument allowing to apply some transformations before storing the
 data into the cache. For example, if you want to convert datetime strings to `PlainDateTime` objects:
