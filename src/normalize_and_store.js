@@ -39,9 +39,11 @@ function doNormalizeAndStore(object, getObjectFromStore) {
 
       if (isArrayOfEntities) {
         const onReplace = object['__onReplace'];
-        if (!onReplace?.[propName] || !['override', 'append'].includes(onReplace[propName])) {
+        if (onReplace?.[propName] && !['override', 'append'].includes(onReplace[propName])) {
           throw new Error(`no or invalid \`__onReplace\` option for property \`${propName}\``);
         }
+
+        const append = onReplace?.[propName] && onReplace[propName] === 'append';
 
         const toRemove = array.filter(entity => entity.__unlink || entity.__delete).map(({ id }) => id);
         const toAdd = array.filter(({ id }) => !toRemove.includes(id)).map(({ id }) => id);
@@ -52,7 +54,7 @@ function doNormalizeAndStore(object, getObjectFromStore) {
             .filter(entity => !toRemove.includes(entity.id))
             .map(entity => createProxy(entity, store.getEntityById));
 
-        if (onReplace[propName] !== 'override' && getObjectFromStore?.()?.[propName]) {
+        if (append && getObjectFromStore?.()?.[propName]) {
           newPropValue =
             getObjectFromStore()[propName]
               .filter(({ id }) => !toAdd.includes(id) && !toRemove.includes(id))
