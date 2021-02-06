@@ -29,7 +29,7 @@ export default class DerivedQuery {
     let isUpdate = false;
     let filteredData = null;
     const unsubscribe = store.subscribe(entities => {
-      const newFilteredData = this.resolver(entities, variables);
+      const newFilteredData = this.resolver(variables, entities);
 
       if (isUpdate) {
         if (newFilteredData !== filteredData) {
