@@ -9,6 +9,12 @@ export default function normalizeAndStore(entities) {
 }
 
 function doNormalizeAndStore(object, getObjectFromStore) {
+  const objectIsEntity = isEntity(object);
+
+  if (objectIsEntity) {
+    object = store.getConfig().transform(object);
+  }
+
   for (let [propName, propValue] of Object.entries(object)) {
     if (['__unlink', '__delete', '__onReplace', 'id', '__typename'].includes(propName)) {
       continue;
@@ -67,8 +73,7 @@ function doNormalizeAndStore(object, getObjectFromStore) {
     object[propName] = newPropValue;
   }
 
-  if (isEntity(object)) {
-    object = store.getConfig().transform(object);
+  if (objectIsEntity) {
     object = store.setEntity(object);
   }
 
