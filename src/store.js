@@ -47,8 +47,6 @@ function setEntity(entity) {
   delete entity.__unlink;
   delete entity.__onReplace;
 
-  entity = config.transform(entity);
-
   if (!entities[entity.id]) {
     entities[entity.id] = entity;
     return entity;
@@ -75,5 +73,6 @@ export default {
   initialize,
   getEntityById,
   setEntity,
-  setConfig
+  setConfig,
+  config
 }

@@ -17,7 +17,9 @@ function doNormalizeAndStore(object, getObjectFromStore) {
     let newPropValue = propValue;
 
     if (isEntity(propValue)) {
-      const entity = propValue; // renaming for readability
+      let entity = propValue; // renaming for readability
+
+      entity = store.config.transform(entity);
 
       store.setEntity(doNormalizeAndStore(entity, () => getObjectFromStore()[propName]));
 
