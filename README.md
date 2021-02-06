@@ -133,8 +133,8 @@ let articles = articlesQuery.subscribe({ userId: 1 },
   updatedArticles => {
     articles = updatedArticles;
   },
-  unsubscirbe => {
-    unsubscribers.push(unsubscirbe);
+  unsubscribe => {
+    unsubscribers.push(unsubscribe);
   });
 
 onDestroy(() => unsubscribers.forEach(unsubscriber => unsubscriber()));
