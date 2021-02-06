@@ -68,32 +68,32 @@ beforeEach(() => {
     [person1.id]: {
       ...person1,
       articles: [
-        createProxy(article1),
-        createProxy(article2),
-        createProxy(article3)
+        createProxy(article1, store.getEntityById),
+        createProxy(article2, store.getEntityById),
+        createProxy(article3, store.getEntityById)
       ],
       contacts: {
         dummy: {
-          address: createProxy(address1),
+          address: createProxy(address1, store.getEntityById),
           phones: [
-            createProxy(phone1),
-            createProxy(phone2)
+            createProxy(phone1, store.getEntityById),
+            createProxy(phone2, store.getEntityById)
           ]
         }
       },
       otherContacts: [[ // just testing nested arrays
         {
-          address: createProxy(address1),
+          address: createProxy(address1, store.getEntityById),
           phones: [
-            createProxy(phone1),
-            createProxy(phone2)
+            createProxy(phone1, store.getEntityById),
+            createProxy(phone2, store.getEntityById)
           ]
         },
         {
-          address: createProxy(address1),
+          address: createProxy(address1, store.getEntityById),
           phones: [
-            createProxy(phone1),
-            createProxy(phone2)
+            createProxy(phone1, store.getEntityById),
+            createProxy(phone2, store.getEntityById)
           ]
         }
       ]],
@@ -166,6 +166,7 @@ test('normalize and store', () => {
 
   expect(Object.keys(store).length).toBe(9);
   expect(store['person1'].articles.length).toBe(2);
+  expect(store['person1'].contacts.dummy.phones.length).toBe(3);
   expect(store['person1'].otherContacts[0][0].phones.length).toBe(1);
   expect(store['person1'].otherContacts[0][1].phones.length).toBe(3);
 });

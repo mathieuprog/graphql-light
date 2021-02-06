@@ -4,7 +4,7 @@ import { isArray, isEntity, isObjectLiteral } from './utils';
 
 export default function normalizeAndStore(entities) {
   [].concat(entities).forEach(entity => {
-    store.setEntity(doNormalizeAndStore(entity, () => store.getEntityById(entity.id)));
+    doNormalizeAndStore(entity, () => store.getEntityById(entity.id));
   });
 }
 
@@ -19,14 +19,12 @@ function doNormalizeAndStore(object, getObjectFromStore) {
     if (isEntity(propValue)) {
       let entity = propValue; // renaming for readability
 
-      entity = store.config.transform(entity);
-
-      store.setEntity(doNormalizeAndStore(entity, () => getObjectFromStore()[propName]));
+      doNormalizeAndStore(entity, () => getObjectFromStore?.()?.[propName]);
 
       newPropValue = createProxy(entity, store.getEntityById);
 
     } else if (isObjectLiteral(propValue)) {
-      newPropValue = doNormalizeAndStore(propValue, () => getObjectFromStore()[propName]);
+      newPropValue = doNormalizeAndStore(propValue, () => getObjectFromStore?.()?.[propName]);
 
     } else if (isArray(propValue)) {
       const array = propValue; // renaming for readability
@@ -44,11 +42,11 @@ function doNormalizeAndStore(object, getObjectFromStore) {
 
         newPropValue =
           array
-            .map(entity => store.setEntity(doNormalizeAndStore(entity, () => getObjectFromStore()[propName])))
+            .map(entity => doNormalizeAndStore(entity, () => getObjectFromStore?.()?.[propName]))
             .filter(entity => !toRemove.includes(entity.id))
             .map(entity => createProxy(entity, store.getEntityById));
 
-        if (onReplace[propName] !== 'override' && getObjectFromStore()[propName]) {
+        if (onReplace[propName] !== 'override' && getObjectFromStore?.()?.[propName]) {
           newPropValue =
             getObjectFromStore()[propName]
               .filter(({ id }) => !toAdd.includes(id) && !toRemove.includes(id))
@@ -61,12 +59,17 @@ function doNormalizeAndStore(object, getObjectFromStore) {
         if (isArrayOfObjectLiterals || isArrayOfArrays) {
           newPropValue =
             array.map((element, i) =>
-              doNormalizeAndStore(element, () => getObjectFromStore()[propName][i]));
+              doNormalizeAndStore(element, () => getObjectFromStore()?.[propName]?.[i]));
         }
       }
     }
 
     object[propName] = newPropValue;
+  }
+
+  if (isEntity(object)) {
+    object = store.getConfig().transform(object);
+    object = store.setEntity(object);
   }
 
   return object;

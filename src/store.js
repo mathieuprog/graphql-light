@@ -63,8 +63,16 @@ function setConfig(newConfig) {
   config = { ...config, ...newConfig };
 }
 
+function getConfig() {
+  return config;
+}
+
 function getEntityById(id) {
   return entities[id];
+}
+
+function getEntities() {
+  return entities;
 }
 
 export default {
@@ -72,7 +80,8 @@ export default {
   store,
   initialize,
   getEntityById,
+  getEntities,
   setEntity,
-  setConfig,
-  config
+  getConfig,
+  setConfig
 }
