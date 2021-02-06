@@ -8,7 +8,7 @@ Entities are normalized and cached into a global store.
 
 ### Subscribe to data updates
 
-You subscribe to queries : receive any updates on the fetched data after the initial fetch.
+You subscribe to queries: receive any updates on the fetched data after the initial fetch.
 
 ### Explicitness
 
@@ -349,7 +349,8 @@ export function transformEntity(entity) {
 function transformArticle(article) {
   return {
     ...article,
-    publishDate: Temporal.PlainDateTime.from(article.publishDate)
+    publishDate: Temporal.PlainDateTime.from(article.publishDate),
+    __onReplace: { comments: 'override' }
   };
 }
 ```
