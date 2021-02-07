@@ -329,29 +329,14 @@ If you only want to remove an entity from a list, without deleting the entity, u
 In the example below, we want to convert dates formatted as strings into datetime objects:
 
 ```javascript
-import { setStoreConfig } from 'graphql-light';
+import { setStoreConfig, transform } from 'graphql-light';
 
-setStoreConfig({ transform: transformEntity });
-
-export function transformEntity(entity) {
-  switch (entity.__typename) {
-    case 'Article':
-      return transformArticle(entity);
-
-    case 'Comment':
-      return transformComment(entity);
-
-    default:
-      return entity;
-  }
-}
+setStoreConfig({ transformers: { transformArticle } });
 
 function transformArticle(article) {
-  return {
-    ...article,
-    publishDate: Temporal.PlainDateTime.from(article.publishDate),
-    __onReplace: { comments: 'override' }
-  };
+  return transform(article, {
+    publishDate: Temporal.PlainDateTime.from
+  });
 }
 ```
 
