@@ -12,7 +12,7 @@ function doNormalizeAndStore(object, getObjectFromStore) {
   const objectIsEntity = isEntity(object);
 
   if (objectIsEntity) {
-    object = store.getConfig().transform(object);
+    object = store.getConfig().transformers[`transform${object.__typename}`]?.(object) ?? object;
   }
 
   for (let [propName, propValue] of Object.entries(object)) {

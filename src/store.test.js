@@ -1,4 +1,5 @@
 import store from './store';
+import transform from './transform';
 
 const denormalizedData = {
   id: 'person1',
@@ -68,30 +69,19 @@ const denormalizedData = {
 };
 
 test('transform before storing', () => {
+  store.setConfig({
+    transformers: {
+      transformPhone: entity =>
+        transform(entity, {
+          number: Number
+        })}});
+
   store.store(denormalizedData);
 
   const entities = store.getEntities();
 
-  expect(entities['person1'].contacts.dummy.phones.length).toBe(2);
-  expect(typeof entities['person1'].contacts.dummy.phones[0].number).toBe('string');
-
-  store.setConfig({
-    transform: entity => {
-      switch (entity.__typename) {
-        case 'Phone':
-          return {
-            ...entity,
-            number: Number(entity.number)
-          };
-
-        default:
-          return entity;
-      }
-    }});
-
-  store.store(denormalizedData);
-
   expect(typeof entities['person1'].contacts.dummy.phones[0].number).toBe('number');
+  expect(entities['person1'].contacts.dummy.phones[0].number).toBe(10);
 });
 
 test('store', () => {

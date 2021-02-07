@@ -2,7 +2,7 @@ import normalizeAndStore from './normalize_and_store';
 
 let entities = {};
 let config = {
-  transform: entity => entity
+  transformers: {}
 };
 
 globalThis.getGraphQLCache = () => entities;
