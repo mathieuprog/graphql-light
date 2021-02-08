@@ -303,7 +303,7 @@ const deleteArticleMutation = new Mutation(client, DELETE_ARTICLE_MUTATION, ({ d
 
   const article = {
     ...data.article,
-    __deleted: true
+    __delete: true
   };
 
   const author = {
@@ -316,7 +316,7 @@ const deleteArticleMutation = new Mutation(client, DELETE_ARTICLE_MUTATION, ({ d
 });
 ```
 
-Add a property `__deleted` to the entity that you want to remove from the cache.
+Add a property `__delete` to the entity that you want to remove from the cache.
 
 In the example above, we cannot just return the article; we must also return the author with its list of articles, as
 the deleted article should also be removed from that list. This should be done for every list that contains the deleted
