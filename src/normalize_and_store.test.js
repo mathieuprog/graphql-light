@@ -39,28 +39,50 @@ const person1 = {
   age: 37
 };
 
+const comment1 = {
+  id: 'comment1',
+  __typename: 'Comment',
+  text: 'A comment'
+};
+
+const comment2 = {
+  id: 'comment2',
+  __typename: 'Comment',
+  text: 'Another comment'
+};
+
 const article1 = {
   id: 'article1',
   __typename: 'Article',
-  title: 'Hello!'
+  title: 'Hello!',
+  comments: [
+    createProxy(comment1, store.getEntityById),
+    createProxy(comment2, store.getEntityById)
+  ]
 };
+
+comment1.article = createProxy(article1, store.getEntityById);
+comment2.article = createProxy(article1, store.getEntityById);
 
 const article2 = {
   id: 'article2',
   __typename: 'Article',
-  title: 'World!'
+  title: 'World!',
+  comments: []
 };
 
 const article3 = {
   id: 'article3',
   __typename: 'Article',
-  title: 'Foo'
+  title: 'Foo',
+  comments: []
 };
 
 const article4 = {
   id: 'article4',
   __typename: 'Article',
-  title: 'Bar'
+  title: 'Bar',
+  comments: []
 };
 
 beforeEach(() => {
@@ -100,12 +122,14 @@ beforeEach(() => {
       objectLiteral: { foo: 'hello', bar: 'world' },
       arrayOfPrimitives: [4, 2]
     },
-    [article1.id]: article1,
-    [article2.id]: article2,
-    [article3.id]: article3,
-    [address1.id]: address1,
-    [phone1.id]: phone1,
-    [phone2.id]: phone2
+    [article1.id]: { ...article1 },
+    [article2.id]: { ...article2 },
+    [article3.id]: { ...article3 },
+    [address1.id]: { ...address1 },
+    [phone1.id]: { ...phone1 },
+    [phone2.id]: { ...phone2 },
+    [comment1.id]: { ...comment1 },
+    [comment2.id]: { ...comment2 }
   });
 });
 
@@ -164,9 +188,35 @@ test('normalize and store', () => {
 
   const store = getGraphQLCache();
 
-  expect(Object.keys(store).length).toBe(9);
+  expect(Object.keys(store).length).toBe(11);
   expect(store['person1'].articles.length).toBe(2);
   expect(store['person1'].contacts.dummy.phones.length).toBe(3);
   expect(store['person1'].otherContacts[0][0].phones.length).toBe(1);
   expect(store['person1'].otherContacts[0][1].phones.length).toBe(3);
+});
+
+test('nested entities', () => {
+  const newComment = {
+    id: 'comment3',
+    __typename: 'Comment',
+    text: 'New comment',
+    article: {
+      id: 'article1',
+      __typename: 'Article',
+      comments: [
+        {
+          id: 'comment3',
+          __typename: 'Comment'
+        }
+      ],
+      __onReplace: { comments: 'append' }
+    }
+  };
+
+  normalizeAndStore(newComment);
+
+  const store = getGraphQLCache();
+
+  expect(Object.keys(store).length).toBe(10);
+  expect(store['article1'].comments.length).toBe(3);
 });

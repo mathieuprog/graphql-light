@@ -18,10 +18,6 @@ function isEntity(o) {
   return !!(isObjectLiteral(o) && o.id && o.__typename)
 }
 
-function isArrayOfEntities(a) {
-  return !!(isArray(a) && a.length > 0 && a[0].id && a[0].__typename)
-}
-
 const areObjectsEqual = (a, b) => {
   if (a === b) return true;
 
@@ -80,7 +76,6 @@ export {
   isArray,
   isEntity,
   isObjectLiteral,
-  isArrayOfEntities,
   areObjectsEqual,
   areArraysEqual
 }

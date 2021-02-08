@@ -25,12 +25,12 @@ function doNormalizeAndStore(object, getObjectFromStore) {
     if (isEntity(propValue)) {
       let entity = propValue; // renaming for readability
 
-      doNormalizeAndStore(entity, () => getObjectFromStore?.()?.[propName]);
+      doNormalizeAndStore(entity, () => store.getEntityById(entity.id));
 
       newPropValue = createProxy(entity, store.getEntityById);
 
     } else if (isObjectLiteral(propValue)) {
-      newPropValue = doNormalizeAndStore(propValue, () => getObjectFromStore?.()?.[propName]);
+      newPropValue = doNormalizeAndStore(propValue, () => getObjectFromStore()?.[propName]);
 
     } else if (isArray(propValue)) {
       const array = propValue; // renaming for readability
@@ -50,11 +50,11 @@ function doNormalizeAndStore(object, getObjectFromStore) {
 
         newPropValue =
           array
-            .map(entity => doNormalizeAndStore(entity, () => getObjectFromStore?.()?.[propName]))
+            .map(entity => doNormalizeAndStore(entity, () => store.getEntityById(entity.id)))
             .filter(entity => !toRemove.includes(entity.id))
             .map(entity => createProxy(entity, store.getEntityById));
 
-        if (append && getObjectFromStore?.()?.[propName]) {
+        if (append && getObjectFromStore()?.[propName]) {
           newPropValue =
             getObjectFromStore()[propName]
               .filter(({ id }) => !toAdd.includes(id) && !toRemove.includes(id))
