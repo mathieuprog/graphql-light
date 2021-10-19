@@ -48,7 +48,7 @@ export default class Query {
 
     getUnsubscribeFn(unsubscribe);
 
-    // if cached, first return data from store, then execute request, any updates (stale cache) will be send consecutively
+    // if cached, first return data from store, then execute request, any updates (stale cache) will be sent consecutively
     if (isCached) {
       await this.fetchAndUpdateStore(variables);
     }
