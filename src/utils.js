@@ -15,7 +15,33 @@ function isObjectLiteral(o) {
 }
 
 function isEntity(o) {
-  return !!(isObjectLiteral(o) && o.id && o.__typename)
+  if (isObjectLiteral(o)) {
+    if (!!o.id !== !!o.__typename) {
+      throw new Error(`id or __typename not set: ${JSON.stringify(o)}`);
+    }
+
+    return o.id && o.__typename;
+  }
+
+  return false;
+}
+
+function isArrayOfEntities(a) {
+  if (a.length === 0) {
+    return false;
+  }
+
+  return a.every(o => {
+    if (isObjectLiteral(o)) {
+      if (!!o.id !== !!o.__typename) {
+        throw new Error(`id or __typename not set: ${JSON.stringify(o)}`);
+      }
+
+      return o.id && o.__typename;
+    }
+
+    return false;
+  });
 }
 
 const areObjectsEqual = (a, b) => {
@@ -73,9 +99,10 @@ function hasProp(o, prop) {
 }
 
 export {
-  isArray,
-  isEntity,
-  isObjectLiteral,
+  areArraysEqual,
   areObjectsEqual,
-  areArraysEqual
+  isArray,
+  isArrayOfEntities,
+  isEntity,
+  isObjectLiteral
 }

@@ -1,6 +1,6 @@
 import createProxy from './create_proxy';
 import store from './store';
-import { isArray, isEntity, isObjectLiteral } from './utils';
+import { isArray, isArrayOfEntities, isEntity, isObjectLiteral } from './utils';
 
 export default function normalizeAndStore(entities) {
   [].concat(entities).forEach(entity => {
@@ -35,15 +35,13 @@ function doNormalizeAndStore(object, getObjectFromStore) {
     } else if (isArray(propValue)) {
       const array = propValue; // renaming for readability
 
-      const isArrayOfEntities = isEntity(array[0]) || (array.length === 0 && object['__onReplace']);
-
-      if (isArrayOfEntities) {
+      if (isArrayOfEntities(array) || (array.length === 0 && object['__onReplace'])) {
         const onReplace = object['__onReplace'];
         if (onReplace?.[propName] && !['override', 'append'].includes(onReplace[propName])) {
           throw new Error(`no or invalid \`__onReplace\` option for property \`${propName}\``);
         }
 
-        const append = onReplace?.[propName] && onReplace[propName] === 'append';
+        const append = !!onReplace?.[propName] && onReplace[propName] === 'append';
 
         const toRemove = array.filter(entity => entity.__unlink || entity.__delete).map(({ id }) => id);
         const toAdd = array.filter(({ id }) => !toRemove.includes(id)).map(({ id }) => id);
