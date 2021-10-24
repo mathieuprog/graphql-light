@@ -342,8 +342,16 @@ function transformArticle(article) {
 
 ### Inspect the global store (cache)
 
+`getGraphQLCache()` returns all the entities stored:
+
 ```javascript
 getGraphQLCache()
+```
+
+The function also accepts a filter allowing you to find specific entities from the store:
+
+```javascript
+getGraphQLCache({ __typename: 'Tag', label: 'foo' })
 ```
 
 ## Installation
