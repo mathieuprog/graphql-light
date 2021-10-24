@@ -5,7 +5,27 @@ let config = {
   transformers: {}
 };
 
-globalThis.getGraphQLCache = () => entities;
+const isObjectSubset = (superObject, subObject) => {
+  return Object.keys(subObject).every(key => {
+      if (typeof subObject[key] === 'object') {
+          return typeof superObject[key] === 'object' 
+            && isObjectSubset(superObject[key], subObject[key]);
+      }
+      return subObject[key] === superObject[key];
+  });
+};
+
+globalThis.getGraphQLCache = filterObject => {
+  if (!filterObject) {
+    return entities;
+  }
+
+  return Object.keys(entities).reduce((filteredEntities, key) => {
+    return isObjectSubset(entities[key], filterObject)
+      ? filteredEntities = { ...filteredEntities, [key]: entities[key] }
+      : filteredEntities;
+  }, {});
+};
 
 const subscribers = new Set();
 

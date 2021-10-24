@@ -32,7 +32,7 @@ const denormalizedData = {
         {
           id: 'tag2',
           __typename: 'Tag',
-          label: 'bar'
+          label: 'foo'
         },
         {
           id: 'tag3',
@@ -49,7 +49,7 @@ const denormalizedData = {
       address: {
         id: 'address1',
         __typename: 'Address',
-        title: 'Foo street'
+        street: 'Foo street'
       },
       phones: [
         {
@@ -106,4 +106,12 @@ test('store', () => {
   store.store({ id: 'person4', __typename: 'Person', name: 'James' });
 
   expect(subscriber).toHaveBeenCalledTimes(3);
+
+  expect(Object.keys(getGraphQLCache()).length).toBe(12);
+  expect(Object.keys(getGraphQLCache({ id: 'tag1' })).length).toBe(1);
+  expect(Object.keys(getGraphQLCache({ __typename: 'Tag' })).length).toBe(3);
+  expect(Object.keys(getGraphQLCache({ __typename: 'Tag', label: 'foo' })).length).toBe(2);
+  expect(Object.keys(getGraphQLCache({ contacts: { dummy: { address: { street: 'Foo street' } } } })).length).toBe(1);
+  expect(Object.keys(getGraphQLCache({ contacts: { dummy: { address: { street: 'Bar street' } } } })).length).toBe(0);
+  expect(Object.keys(getGraphQLCache({ contacts: { dummy: { address: { zip: 'Foo street' } } } })).length).toBe(0);
 });
