@@ -82,7 +82,7 @@ import { Query } from 'graphql-light';
 import client from './client';
 import ARTICLES_QUERY from './queries/articles';
 
-const articlesQuery = new Query(client, ARTICLES_QUERY, (entities, variables) => {
+const articlesQuery = new Query(client, ARTICLES_QUERY, (variables, entities) => {
   const { userId } = variables;
 
   return entities[userId].articles;
@@ -161,7 +161,7 @@ Some data may be derived from other queries' responses. For example, say we have
 user belongs to, with its locations, its services, etc.
 
 ```javascript
-const organizationsQuery = new Query(client, ORGANIZATIONS_QUERY, (entities, variables) => {
+const organizationsQuery = new Query(client, ORGANIZATIONS_QUERY, (variables, entities) => {
   const { userId } = variables;
 
   return entities[userId].organizations;
@@ -178,7 +178,7 @@ const locationsQuery = new DerivedQuery(
   [
     { query: organizationsQuery, takeVariables: ({ organization }) => ({ ...organization }) }
   ],
-  (entities, variables) => {
+  (variables, entities) => {
     const { organization: { userId } } = variables;
     
     return entities[userId].organizations.flatMap(o => o.locations);
