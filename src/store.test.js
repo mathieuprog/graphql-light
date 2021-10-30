@@ -114,4 +114,6 @@ test('store', () => {
   expect(Object.keys(getGraphQLCache({ contacts: { dummy: { address: { street: 'Foo street' } } } })).length).toBe(1);
   expect(Object.keys(getGraphQLCache({ contacts: { dummy: { address: { street: 'Bar street' } } } })).length).toBe(0);
   expect(Object.keys(getGraphQLCache({ contacts: { dummy: { address: { zip: 'Foo street' } } } })).length).toBe(0);
+  
+  expect(Object.keys(store.getEntitiesByType('Tag')).length).toBe(3);
 });

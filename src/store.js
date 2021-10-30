@@ -87,6 +87,10 @@ function getConfig() {
   return config;
 }
 
+function getEntitiesByType(type) {
+  return Object.values(getGraphQLCache({ __typename: type }));
+}
+
 function getEntityById(id) {
   return entities[id];
 }
@@ -100,6 +104,7 @@ export default {
   store,
   initialize,
   getEntityById,
+  getEntitiesByType,
   getEntities,
   setEntity,
   getConfig,
