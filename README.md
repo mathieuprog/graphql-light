@@ -368,6 +368,18 @@ filterEntities({ label: 'foo' }, subsetEntities)
 getEntitiesByType('Tag', subsetEntities)
 ```
 
+```javascript
+countEntities(subsetEntities)
+```
+
+```javascript
+asList(subsetEntities)
+```
+
+```javascript
+one(subsetEntities)
+```
+
 For each of these functions, the `subsetEntities` parameter is optional. If omitted, they act on the whole store.
 
 ## Installation
