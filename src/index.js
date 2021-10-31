@@ -6,6 +6,12 @@ import store from './store';
 import transform from './transform';
 
 const getEntityById = store.getEntityById;
+const getEntities = store.getEntities;
+const getEntitiesByType = store.getEntitiesByType;
+const filterEntities = store.filterEntities;
+const countEntities = store.countEntities;
+const asList = store.asList;
+const one = store.one;
 const setStoreConfig = store.setConfig;
 
 export {
@@ -15,5 +21,11 @@ export {
   Mutation,
   transform,
   getEntityById,
+  getEntities,
+  getEntitiesByType,
+  filterEntities,
+  countEntities,
+  asList,
+  one,
   setStoreConfig
 }

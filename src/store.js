@@ -83,6 +83,14 @@ function getConfig() {
   return config;
 }
 
+function getEntities() {
+  return allEntities;
+}
+
+function getEntityById(id, entities = allEntities) {
+  return entities[id];
+}
+
 function getEntitiesByType(type, entities = allEntities) {
   return filterEntities({ __typename: type }, entities);
 }
@@ -93,14 +101,6 @@ function filterEntities(filterObject, entities = allEntities) {
       ? filteredEntities = { ...filteredEntities, [key]: entities[key] }
       : filteredEntities;
   }, {});
-}
-
-function getEntityById(id, entities = allEntities) {
-  return entities[id];
-}
-
-function getEntities() {
-  return allEntities;
 }
 
 function countEntities(entities = allEntities) {
