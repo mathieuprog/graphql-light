@@ -354,6 +354,22 @@ The function also accepts a filter allowing you to find specific entities from t
 getGraphQLCache({ __typename: 'Tag', label: 'foo' })
 ```
 
+The library also provides some utility functions:
+
+```javascript
+getEntityById(id, subsetEntities)
+```
+
+```javascript
+filterEntities({ label: 'foo' }, subsetEntities)
+```
+
+```javascript
+getEntitiesByType('Tag', subsetEntities)
+```
+
+For each of these functions, the `subsetEntities` parameter is optional. If omitted, they act on the whole store.
+
 ## Installation
 
 You can get GraphQL Light via [npm](http://npmjs.com).
