@@ -103,15 +103,34 @@ function getEntities() {
   return allEntities;
 }
 
+function countEntities(entities = allEntities) {
+  return Object.keys(entities).length;
+}
+
+function asList(entities = allEntities) {
+  return Object.values(entities);
+}
+
+function one(entities) {
+  const list = asList(entities);
+  if (list.length !== 1) {
+    throw new Error(`more than one entry: ${JSON.stringify(entities)}`);
+  }
+
+  return list[0];
+}
+
 export default {
-  subscribe,
-  store,
-  initialize,
-  getEntityById,
+  countEntities,
+  filterEntities,
+  getConfig,
   getEntitiesByType,
   getEntities,
-  filterEntities,
+  getEntityById,
+  initialize,
+  one,
+  setConfig,
   setEntity,
-  getConfig,
-  setConfig
+  store,
+  subscribe
 }
