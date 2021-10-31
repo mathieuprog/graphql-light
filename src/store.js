@@ -1,6 +1,6 @@
 import normalizeAndStore from './normalize_and_store';
 
-let entities = {};
+let allEntities = {};
 let config = {
   transformers: {}
 };
@@ -17,21 +17,17 @@ const isObjectSubset = (superObject, subObject) => {
 
 globalThis.getGraphQLCache = filterObject => {
   if (!filterObject) {
-    return entities;
+    return allEntities;
   }
 
-  return Object.keys(entities).reduce((filteredEntities, key) => {
-    return isObjectSubset(entities[key], filterObject)
-      ? filteredEntities = { ...filteredEntities, [key]: entities[key] }
-      : filteredEntities;
-  }, {});
+  return filterEntities(filterObject, allEntities);
 };
 
 const subscribers = new Set();
 
 function subscribe(subscriber) {
-  if (Object.keys(entities).length > 0) {
-    subscriber(entities); // Call subscriber with current value
+  if (Object.keys(allEntities).length > 0) {
+    subscriber(allEntities); // Call subscriber with current value
   }
 
   const item = { subscriber };
@@ -45,7 +41,7 @@ function subscribe(subscriber) {
 
 function notifySubscribers() {
   for (const { subscriber } of subscribers) {
-    subscriber(entities); // Call all subscriptions
+    subscriber(allEntities); // Call all subscriptions
   }
 }
 
@@ -55,25 +51,25 @@ function store(denormalizedData) {
 }
 
 function initialize(normalizedData) {
-  entities = normalizedData
+  allEntities = normalizedData
 }
 
 function setEntity(entity) {
   if (entity.__delete) {
-    delete entities[entity.id];
+    delete allEntities[entity.id];
     return entity;
   }
 
   delete entity.__unlink;
   delete entity.__onReplace;
 
-  if (!entities[entity.id]) {
-    entities[entity.id] = entity;
+  if (!allEntities[entity.id]) {
+    allEntities[entity.id] = entity;
     return entity;
   }
 
   for (let [propName, propValue] of Object.entries(entity)) {
-    entities[entity.id][propName] = propValue;
+    allEntities[entity.id][propName] = propValue;
   }
 
   return entity;
@@ -87,16 +83,24 @@ function getConfig() {
   return config;
 }
 
-function getEntitiesByType(type) {
-  return Object.values(getGraphQLCache({ __typename: type }));
+function getEntitiesByType(type, entities = allEntities) {
+  return filterEntities({ __typename: type }, entities);
 }
 
-function getEntityById(id) {
+function filterEntities(filterObject, entities = allEntities) {
+  return Object.keys(entities).reduce((filteredEntities, key) => {
+    return isObjectSubset(entities[key], filterObject)
+      ? filteredEntities = { ...filteredEntities, [key]: entities[key] }
+      : filteredEntities;
+  }, {});
+}
+
+function getEntityById(id, entities = allEntities) {
   return entities[id];
 }
 
 function getEntities() {
-  return entities;
+  return allEntities;
 }
 
 export default {
@@ -106,6 +110,7 @@ export default {
   getEntityById,
   getEntitiesByType,
   getEntities,
+  filterEntities,
   setEntity,
   getConfig,
   setConfig
