@@ -20,4 +20,6 @@ test('create proxy', () => {
 
   expect(personProxy.id).toBe('person1');
   expect(personProxy.name).toBe('Mathieu');
+
+  expect(personProxy.__target__).toBe(persons[0]);
 });
