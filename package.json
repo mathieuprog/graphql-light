@@ -1,17 +1,17 @@
 {
   "name": "graphql-light",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "A simple GraphQL client",
   "scripts": {
     "test": "jest"
   },
   "devDependencies": {
-    "@babel/core": "^7.16.0",
-    "@babel/preset-env": "^7.16.0",
-    "jest": "^27.3.1"
+    "@babel/core": "^7.16.5",
+    "@babel/preset-env": "^7.16.5",
+    "jest": "^27.4.5"
   },
   "dependencies": {
-    "ky": "^0.28.6"
+    "ky": "^0.28.7"
   },
   "main": "src/index.js",
   "repository": {
