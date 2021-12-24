@@ -1,8 +1,6 @@
 import store from './store';
 import { areObjectsEqual } from './utils';
-
-// TODO support multiple caching strategies
-// https://www.apollographql.com/docs/react/data/queries/#supported-fetch-policies
+import FetchStrategy, { fetch } from './fetchStrategies';
 
 export default class Query {
   // resolver: function retrieving the data from the cache and from the server's response data
@@ -16,24 +14,29 @@ export default class Query {
     this.cache = [];
   }
 
-  async subscribe(variables, subscriber, getUnsubscribeFn) {
+  async subscribe(variables, subscriber, getUnsubscribeFn, options) {
     if (!getUnsubscribeFn) {
       throw new Error('must pass a callback as third argument to retrieve the unsubscribe function');
     }
 
+    options = options || {};
     variables = variables || {};
 
-    const isCached = this.isCached(variables);
+    await fetch({
+      strategy: options.fetchStrategy || FetchStrategy.CACHE_FIRST,
+      isCached: this.isCached(variables),
+      fetchData: () => this.fetchData(variables),
+      cacheData: data => this.cacheData(data, variables)
+    });
 
-    // if not cached, first execute request, then return data from store
-    if (!isCached) {
-      await this.fetchAndUpdateStore(variables);
-    }
+    return Query.resolveAndSubscribe(variables, this.resolver, subscriber, getUnsubscribeFn)
+  }
 
+  static resolveAndSubscribe(variables, resolver, subscriber, getUnsubscribeFn) {
     let isUpdate = false;
     let filteredData = null;
     const unsubscribe = store.subscribe(entities => {
-      const newFilteredData = this.resolver(variables, entities);
+      const newFilteredData = resolver(variables, entities);
 
       if (isUpdate) {
         if (newFilteredData !== filteredData) {
@@ -48,32 +51,34 @@ export default class Query {
 
     getUnsubscribeFn(unsubscribe);
 
-    // if cached, first return data from store, then execute request, any updates (stale cache) will be sent consecutively
-    if (isCached) {
-      await this.fetchAndUpdateStore(variables);
-    }
-
     return filteredData;
   }
 
-  fetchAndUpdateStore(variables) {
-    return this._getRequestPromiseForVariables(variables)
-        || this._doFetchAndUpdateStore(variables);
-  }
-
-  async _doFetchAndUpdateStore(variables) {
-    const promise = this.client.request(this.queryDocument, variables);
-
-    this.fetching.push({ variables, promise });
-
+  async fetchData(variables) {
     let data;
-    try {
-      data = await promise;
-    } finally {
-      this.fetching = this.fetching.filter(({ variables: v, _ }) => v !== variables);
+
+    const fetching = this.fetching.find(({ variables: v }) => areObjectsEqual(v, variables));
+
+    if (fetching) {
+      data = await fetching.promise;
+    } else {
+      const promise = this.client.request(this.queryDocument, variables);
+
+      this.fetching.push({ variables, promise });
+
+      try {
+        data = await promise;
+      } finally {
+        this.fetching = this.fetching.filter(({ variables: v }) => v !== variables);
+      }
     }
 
     data = this.transformer(data, variables);
+
+    return data;
+  }
+
+  cacheData(data, variables) {
     if (data) {
       store.store(data);
     }
@@ -84,10 +89,5 @@ export default class Query {
 
   isCached(variables) {
     return this.cache.some(v => areObjectsEqual(v, variables));
-  }
-
-  _getRequestPromiseForVariables(variables) {
-    const fetching = this.fetching.find(({ variables: v, _ }) => areObjectsEqual(v, variables));
-    return fetching && fetching.promise;
   }
 }

@@ -1,11 +1,5 @@
 import ky from 'ky';
-
-class GraphQLError extends Error {
-  constructor(errorArray) {
-    super(JSON.stringify(errorArray));
-    this.name = 'GraphQLError';
-  }
-}
+import GraphQLError from './GraphQLError';
 
 export default class Client {
   constructor(url, options) {
