@@ -19,13 +19,6 @@ export default class DerivedQuery {
 
     await Promise.all(queries);
 
-    this.queries
-      .map(({_, takeVariables}) => Object.keys(takeVariables(variables)))
-      .flat()
-      .forEach(key => {
-        delete variables[key];
-      });
-
     let isUpdate = false;
     let filteredData = null;
     const unsubscribe = store.subscribe(entities => {
