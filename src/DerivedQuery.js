@@ -15,7 +15,7 @@ export default class DerivedQuery {
     options = options || {};
     variables = variables || {};
 
-    this.queries =
+    const queries =
       this.queries
         .map(({ query, takeVariables }) => {
           variables = takeVariables ? takeVariables(variables) : {};
