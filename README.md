@@ -105,6 +105,8 @@ data into the cache. For example, if you want to convert datetime strings to `Pl
 
 ```javascript
 import { Query } from 'graphql-light';
+import client from './client';
+import ARTICLES_QUERY from './queries/articles';
 
 const articlesQuery = new Query(client, ARTICLES_QUERY, (entities, variables) => {
   const { userId } = variables;
@@ -169,6 +171,8 @@ a user belongs to, with its locations, its services, etc.
 
 ```javascript
 import { Query } from 'graphql-light';
+import client from './client';
+import ORGANIZATIONS_QUERY from './queries/organizations';
 
 const organizationsQuery = new Query(client, ORGANIZATIONS_QUERY, (variables, entities) => {
   const { userId } = variables;
@@ -182,6 +186,7 @@ we want to retrieve all the locations that can already be fetched through the or
 
 ```javascript
 import { DerivedQuery } from 'graphql-light';
+import { organizationsQuery } from '../graphql';
 
 const locationsQuery = new DerivedQuery(
   [
@@ -206,6 +211,8 @@ Then you can call the `subscribe` function to fetch the data and watch for updat
 as those for `subscribe` of `Query`.
 
 ```javascript
+import { locationsQuery } from '../graphql';
+
 let locations = locationsQuery.subscribe({ organization: { userId: 1 } },
   updatedLocations => {
     locations = updatedLocations;
@@ -256,6 +263,8 @@ export default `mutation CreateArticle($user: ArticleInput!) {
 
 ```javascript
 import { Mutation } from 'graphql-light';
+import client from './client';
+import CREATE_ARTICLE_MUTATION from './mutations/create-article';
 
 const createArticleMutation = new Mutation(client, CREATE_ARTICLE_MUTATION, ({ createArticle: data }) => {
   if (data.__typename !== 'CreateArticleSuccess') {
@@ -288,6 +297,8 @@ article as the data is being normalized.
 Instead of appending you may also specify `'override'` in order to replace the whole list with the new list.
 
 ```javascript
+import { createArticleMutation } from '../graphql';
+
 const newArticleData = {
   name,
   articles: articles.map(({ id }) => id)
@@ -313,6 +324,8 @@ When an entity has been deleted, you should also remove it from the cache.
 
 ```javascript
 import { Mutation } from 'graphql-light';
+import client from './client';
+import DELETE_ARTICLE_MUTATION from './mutations/delete-article';
 
 const deleteArticleMutation = new Mutation(client, DELETE_ARTICLE_MUTATION, ({ deleteArticle: data }) => {
   if (data.__typename !== 'DeleteArticleSuccess') {
@@ -347,6 +360,9 @@ If you only want to remove an entity from a list, without deleting the entity, u
 Different fetching strategies can be used when calling `subscribe`.
 
 ```javascript
+import { FetchStrategy } from 'graphql-light';
+import { articlesQuery } from '../graphql';
+
 let articles = articlesQuery.subscribe({ userId: 1 },
   updatedArticles => articles = updatedArticles,
   unsubscribe => unsubscribers.push(unsubscribe),
