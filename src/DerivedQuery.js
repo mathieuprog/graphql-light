@@ -1,4 +1,5 @@
 import Query from './Query';
+import FetchStrategy, { fetch } from './fetchStrategies';
 
 export default class DerivedQuery {
   constructor(queries, resolver) {
