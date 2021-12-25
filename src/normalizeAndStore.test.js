@@ -1,5 +1,5 @@
-import createProxy from './create_proxy';
-import normalizeAndStore from './normalize_and_store';
+import createProxy from './createProxy';
+import normalizeAndStore from './normalizeAndStore';
 import store from './store';
 
 const address1 = {

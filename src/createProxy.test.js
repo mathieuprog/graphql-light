@@ -1,4 +1,4 @@
-import createProxy from './create_proxy';
+import createProxy from './createProxy';
 
 const persons = [
   {

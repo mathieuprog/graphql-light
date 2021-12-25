@@ -1,4 +1,4 @@
-import normalizeAndStore from './normalize_and_store';
+import normalizeAndStore from './normalizeAndStore';
 
 const isObjectSubset = (superObject, subObject) => {
   return Object.keys(subObject).every(key => {
