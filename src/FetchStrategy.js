@@ -1,5 +1,3 @@
-import NotFoundInCacheError from './NotFoundInCacheError';
-
 /**
  * cache-first
  * First executes the query against the cache. If all requested data is present in the cache, that data is returned. Otherwise, executes the query against your GraphQL server and returns that data after caching it.
@@ -24,39 +22,11 @@ import NotFoundInCacheError from './NotFoundInCacheError';
  * Prioritizes consistency with server data, but can't provide a near-instantaneous response when cached data is available.
  */
 
-const strategies = Object.freeze({
+const FetchStrategy = Object.freeze({
   CACHE_FIRST: 'CACHE_FIRST',
   CACHE_ONLY: 'CACHE_ONLY',
   CACHE_AND_NETWORK: 'CACHE_AND_NETWORK',
   NETWORK_ONLY: 'NETWORK_ONLY'
 });
 
-export default strategies;
-
-export async function fetch({ strategy, isCached, fetchData, cacheData }) {
-  switch (strategy) {
-    case strategies.CACHE_AND_NETWORK:
-      if (!isCached) {
-        cacheData(await fetchData());
-      } else {
-        fetchData().then(data => cacheData(data));
-      }
-      break;
-
-    case strategies.CACHE_FIRST:
-      if (!isCached) {
-        cacheData(await fetchData());
-      }
-      break;
-
-    case strategies.NETWORK_ONLY:
-      cacheData(await fetchData());
-      break;
-
-    case strategies.CACHE_ONLY:
-      if (!isCached) {
-        throw new NotFoundInCacheError('not found in cache');
-      }
-      break;
-  }
-};
+export default FetchStrategy;

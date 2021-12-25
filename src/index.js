@@ -2,9 +2,9 @@ import Client from './Client';
 import store from './store';
 import Query from './Query';
 import DerivedQuery from './DerivedQuery';
-import Mutation from './mutation';
+import Mutation from './Mutation';
 import transform from './transform';
-import FetchStrategy from './fetchStrategies';
+import FetchStrategy from './FetchStrategy';
 
 export {
   Client,

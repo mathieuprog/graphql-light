@@ -1,6 +1,7 @@
 import store from './store';
 import { areObjectsEqual } from './utils';
-import FetchStrategy, { fetch } from './fetchStrategies';
+import FetchStrategy from './FetchStrategy';
+import getStrategyAlgorithm from './getStrategyAlgorithm';
 
 export default class Query {
   // resolver: function retrieving the data from the cache and from the server's response data
@@ -22,8 +23,7 @@ export default class Query {
     options = options || {};
     variables = variables || {};
 
-    await fetch({
-      strategy: options.fetchStrategy || FetchStrategy.CACHE_FIRST,
+    await getStrategyAlgorithm(options.fetchStrategy || FetchStrategy.CACHE_FIRST)({
       isCached: this.isCached(variables),
       fetchData: () => this.fetchData(variables),
       cacheData: data => this.cacheData(data, variables)

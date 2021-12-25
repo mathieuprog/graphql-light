@@ -1,5 +1,6 @@
 import Query from './Query';
-import FetchStrategy, { fetch } from './fetchStrategies';
+import FetchStrategy from './FetchStrategy';
+import getStrategyAlgorithm from './getStrategyAlgorithm';
 
 export default class DerivedQuery {
   constructor(queries, resolver) {
@@ -20,8 +21,7 @@ export default class DerivedQuery {
         .map(({ query, takeVariables }) => {
           variables = takeVariables ? takeVariables(variables) : {};
 
-          return fetch({
-            strategy: options.fetchStrategy || FetchStrategy.CACHE_FIRST,
+          return getStrategyAlgorithm(options.fetchStrategy || FetchStrategy.CACHE_FIRST)({
             isCached: query.isCached(variables),
             fetchData: () => query.fetchData(variables),
             cacheData: data => query.cacheData(data, variables)
