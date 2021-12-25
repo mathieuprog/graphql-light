@@ -155,10 +155,15 @@ The first argument is an object containing the variables that the GraphQL query 
 
 The second argument is a callback function called whenever the stored data changes.
 
+The third argument allows you to retrieve the unsubscriber function which you need to call when you no longer need to
+watch for data updates.
+
+A fourth argument may be passed allowing to pass options. The only supported option for now is the [fetching strategy](#fetching-strategies).
+
 ### Derived queries
 
-Some data may be derived from other queries' responses. For example, say we have a query to fetch the organizations that a
-user belongs to, with its locations, its services, etc.
+Some data may be derived from other queries' responses. For example, say we have a query to fetch the organizations that
+a user belongs to, with its locations, its services, etc.
 
 ```javascript
 const organizationsQuery = new Query(client, ORGANIZATIONS_QUERY, (variables, entities) => {
@@ -193,10 +198,17 @@ You need to provide an object with two properties:
 
 The second argument is the function that retrieves the requested data from the store after the response has been cached.
 
+Then you can call the `subscribe` function to fetch the data and watch for updates. The arguments for `subscribe` of `DerivedQuery` are the same
+as those for `subscribe` of `Query`.
+
 ```javascript
-let locations = locationsQuery.subscribe({ organization: { userId: 1 } }, updatedLocations => {
-  locations = updatedLocations;
-});
+let locations = locationsQuery.subscribe({ organization: { userId: 1 } },
+  updatedLocations => {
+    locations = updatedLocations;
+  },
+  unsubscribe => {
+    unsubscribers.push(unsubscribe);
+  });
 ```
 
 As the query may depend on multiple other queries, it is a good idea to scope the variables. Here the location query
@@ -323,6 +335,39 @@ the deleted article should also be removed from that list. This should be done f
 article.
 
 If you only want to remove an entity from a list, without deleting the entity, use `__unlink` and set it to `true`.
+
+### Fetching strategies
+
+Different fetching strategies can be used when calling `subscribe`.
+
+```javascript
+let articles = articlesQuery.subscribe({ userId: 1 },
+  updatedArticles => articles = updatedArticles,
+  unsubscribe => unsubscribers.push(unsubscribe),
+  { fetchStrategy: FetchStrategy.CACHE_AND_NETWORK });
+```
+
+#### `FetchStrategy.CACHE_FIRST` (default)
+First executes the query against the cache. If all requested data is present in the cache, that data is returned. Otherwise, executes the query against your GraphQL server and returns that data after caching it.
+
+Prioritizes minimizing the number of network requests sent by your application.
+
+This is the default fetch policy.
+
+#### `FetchStrategy.CACHE_ONLY`
+Executes the query only against the cache. It never queries your server in this case.
+
+A cache-only query throws an error if the cache does not contain data for all requested fields.
+
+#### `FetchStrategy.CACHE_AND_NETWORK`
+Executes the full query against both the cache and your GraphQL server. The query automatically updates if the result of the server-side query modifies cached fields.
+
+ Provides a fast response while also helping to keep cached data consistent with server data.
+
+#### `FetchStrategy.NETWORK_ONLY`
+Executes the full query against your GraphQL server, without first checking the cache. The query's result is stored in the cache.
+
+Prioritizes consistency with server data, but can't provide a near-instantaneous response when cached data is available.
 
 ### Global function to transform data before caching
 
