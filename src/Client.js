@@ -7,8 +7,13 @@ export default class Client {
     this.options = options;
   }
 
-  async request(body, variables = {}) {
-    const { data, errors } = await ky.post(this.url, { json: { query: body, variables }, ...this.options }).json();
+  async request(query, variables = {}) {
+    const json =
+      (Object.keys(variables).length === 0)
+      ? { query }
+      : { query, variables }
+
+    const { data, errors } = await ky.post(this.url, { json, ...this.options }).json();
 
     if (errors) {
       throw new GraphQLError(errors);

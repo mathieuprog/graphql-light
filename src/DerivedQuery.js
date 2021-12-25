@@ -13,7 +13,6 @@ export default class DerivedQuery {
       throw new Error('must pass a callback as third argument to retrieve the unsubscribe function');
     }
 
-    options = options || {};
     variables = variables || {};
 
     const queries =
@@ -21,7 +20,7 @@ export default class DerivedQuery {
         .map(({ query, takeVariables }) => {
           variables = takeVariables ? takeVariables(variables) : {};
 
-          return getStrategyAlgorithm(options.fetchStrategy || FetchStrategy.CACHE_FIRST)({
+          return getStrategyAlgorithm(options?.fetchStrategy || FetchStrategy.CACHE_FIRST)({
             isCached: query.isCached(variables),
             fetchData: () => query.fetchData(variables),
             cacheData: data => query.cacheData(data, variables)

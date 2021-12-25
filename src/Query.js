@@ -20,16 +20,15 @@ export default class Query {
       throw new Error('must pass a callback as third argument to retrieve the unsubscribe function');
     }
 
-    options = options || {};
     variables = variables || {};
 
-    await getStrategyAlgorithm(options.fetchStrategy || FetchStrategy.CACHE_FIRST)({
+    await getStrategyAlgorithm(options?.fetchStrategy || FetchStrategy.CACHE_FIRST)({
       isCached: this.isCached(variables),
       fetchData: () => this.fetchData(variables),
       cacheData: data => this.cacheData(data, variables)
     });
 
-    return Query.resolveAndSubscribe(variables, this.resolver, subscriber, getUnsubscribeFn)
+    return Query.resolveAndSubscribe(variables, this.resolver, subscriber, getUnsubscribeFn);
   }
 
   static resolveAndSubscribe(variables, resolver, subscriber, getUnsubscribeFn) {
