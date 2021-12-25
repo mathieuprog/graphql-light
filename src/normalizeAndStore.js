@@ -1,14 +1,13 @@
 import createProxy from './createProxy';
-import store from './store';
 import { isArray, isArrayOfEntities, isEntity, isObjectLiteral } from './utils';
 
-export default function normalizeAndStore(entities) {
+export default function normalizeAndStore(store, entities) {
   [].concat(entities).forEach(entity => {
-    doNormalizeAndStore(entity, () => store.getEntityById(entity.id));
+    doNormalizeAndStore(store, entity, () => store.getEntityById(entity.id));
   });
 }
 
-function doNormalizeAndStore(object, getObjectFromStore) {
+function doNormalizeAndStore(store, object, getObjectFromStore) {
   const objectIsEntity = isEntity(object);
 
   if (objectIsEntity) {
@@ -25,12 +24,12 @@ function doNormalizeAndStore(object, getObjectFromStore) {
     if (isEntity(propValue)) {
       let entity = propValue; // renaming for readability
 
-      doNormalizeAndStore(entity, () => store.getEntityById(entity.id));
+      doNormalizeAndStore(store, entity, () => store.getEntityById(entity.id));
 
       newPropValue = createProxy(entity, store.getEntityById.bind(store));
 
     } else if (isObjectLiteral(propValue)) {
-      newPropValue = doNormalizeAndStore(propValue, () => getObjectFromStore()?.[propName]);
+      newPropValue = doNormalizeAndStore(store, propValue, () => getObjectFromStore()?.[propName]);
 
     } else if (isArray(propValue)) {
       const array = propValue; // renaming for readability
@@ -48,7 +47,7 @@ function doNormalizeAndStore(object, getObjectFromStore) {
 
         newPropValue =
           array
-            .map(entity => doNormalizeAndStore(entity, () => store.getEntityById(entity.id)))
+            .map(entity => doNormalizeAndStore(store, entity, () => store.getEntityById(entity.id)))
             .filter(entity => !toRemove.includes(entity.id))
             .map(entity => createProxy(entity, store.getEntityById.bind(store)));
 
@@ -65,7 +64,7 @@ function doNormalizeAndStore(object, getObjectFromStore) {
         if (isArrayOfObjectLiterals || isArrayOfArrays) {
           newPropValue =
             array.map((element, i) =>
-              doNormalizeAndStore(element, () => getObjectFromStore()?.[propName]?.[i]));
+              doNormalizeAndStore(store, element, () => getObjectFromStore()?.[propName]?.[i]));
         }
       }
     }

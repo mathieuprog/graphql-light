@@ -184,7 +184,7 @@ test('normalize and store', () => {
     arrayOfPrimitives: [1, 2]
   };
 
-  normalizeAndStore(entity);
+  normalizeAndStore(store, entity);
 
   const entities = store.getGraphQLCache();
 
@@ -213,7 +213,7 @@ test('nested entities', () => {
     }
   };
 
-  normalizeAndStore(newComment);
+  normalizeAndStore(store, newComment);
 
   const entities = store.getGraphQLCache();
 

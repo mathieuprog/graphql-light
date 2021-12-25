@@ -1,14 +1,5 @@
 import normalizeAndStore from './normalizeAndStore';
-
-const isObjectSubset = (superObject, subObject) => {
-  return Object.keys(subObject).every(key => {
-      if (typeof subObject[key] === 'object') {
-          return typeof superObject[key] === 'object' 
-            && isObjectSubset(superObject[key], subObject[key]);
-      }
-      return subObject[key] === superObject[key];
-  });
-};
+import { isObjectSubset } from './utils';
 
 class Store {
   allEntities = {};
@@ -36,7 +27,7 @@ class Store {
   }
 
   store(denormalizedData) {
-    normalizeAndStore(denormalizedData);
+    normalizeAndStore(this, denormalizedData);
     this.notifySubscribers();
   }
 

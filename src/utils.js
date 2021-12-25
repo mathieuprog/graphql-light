@@ -98,11 +98,22 @@ function hasProp(o, prop) {
   return Object.prototype.hasOwnProperty.call(o, prop);
 }
 
+function isObjectSubset(superObject, subObject) {
+  return Object.keys(subObject).every(key => {
+      if (typeof subObject[key] === 'object') {
+          return typeof superObject[key] === 'object' 
+            && isObjectSubset(superObject[key], subObject[key]);
+      }
+      return subObject[key] === superObject[key];
+  });
+};
+
 export {
   areArraysEqual,
   areObjectsEqual,
   isArray,
   isArrayOfEntities,
   isEntity,
-  isObjectLiteral
+  isObjectLiteral,
+  isObjectSubset
 }
