@@ -1,7 +1,7 @@
 import FetchStrategy from './FetchStrategy';
 import NotFoundInCacheError from './NotFoundInCacheError';
 
-export default function getStrategyAlgorithm(strategy) {
+export default function getFetchStrategyAlgorithm(strategy) {
   return async ({ isCached, fetchData, cacheData }) => {
     switch (strategy) {
       case FetchStrategy.CACHE_AND_NETWORK:
