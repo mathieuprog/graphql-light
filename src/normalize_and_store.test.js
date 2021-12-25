@@ -56,13 +56,13 @@ const article1 = {
   __typename: 'Article',
   title: 'Hello!',
   comments: [
-    createProxy(comment1, store.getEntityById),
-    createProxy(comment2, store.getEntityById)
+    createProxy(comment1, store.getEntityById.bind(store)),
+    createProxy(comment2, store.getEntityById.bind(store))
   ]
 };
 
-comment1.article = createProxy(article1, store.getEntityById);
-comment2.article = createProxy(article1, store.getEntityById);
+comment1.article = createProxy(article1, store.getEntityById.bind(store));
+comment2.article = createProxy(article1, store.getEntityById.bind(store));
 
 const article2 = {
   id: 'article2',
@@ -90,32 +90,32 @@ beforeEach(() => {
     [person1.id]: {
       ...person1,
       articles: [
-        createProxy(article1, store.getEntityById),
-        createProxy(article2, store.getEntityById),
-        createProxy(article3, store.getEntityById)
+        createProxy(article1, store.getEntityById.bind(store)),
+        createProxy(article2, store.getEntityById.bind(store)),
+        createProxy(article3, store.getEntityById.bind(store))
       ],
       contacts: {
         dummy: {
-          address: createProxy(address1, store.getEntityById),
+          address: createProxy(address1, store.getEntityById.bind(store)),
           phones: [
-            createProxy(phone1, store.getEntityById),
-            createProxy(phone2, store.getEntityById)
+            createProxy(phone1, store.getEntityById.bind(store)),
+            createProxy(phone2, store.getEntityById.bind(store))
           ]
         }
       },
       otherContacts: [[ // just testing nested arrays
         {
-          address: createProxy(address1, store.getEntityById),
+          address: createProxy(address1, store.getEntityById.bind(store)),
           phones: [
-            createProxy(phone1, store.getEntityById),
-            createProxy(phone2, store.getEntityById)
+            createProxy(phone1, store.getEntityById.bind(store)),
+            createProxy(phone2, store.getEntityById.bind(store))
           ]
         },
         {
-          address: createProxy(address1, store.getEntityById),
+          address: createProxy(address1, store.getEntityById.bind(store)),
           phones: [
-            createProxy(phone1, store.getEntityById),
-            createProxy(phone2, store.getEntityById)
+            createProxy(phone1, store.getEntityById.bind(store)),
+            createProxy(phone2, store.getEntityById.bind(store))
           ]
         }
       ]],
@@ -186,13 +186,13 @@ test('normalize and store', () => {
 
   normalizeAndStore(entity);
 
-  const store = getGraphQLCache();
+  const entities = store.getGraphQLCache();
 
-  expect(Object.keys(store).length).toBe(11);
-  expect(store['person1'].articles.length).toBe(2);
-  expect(store['person1'].contacts.dummy.phones.length).toBe(3);
-  expect(store['person1'].otherContacts[0][0].phones.length).toBe(1);
-  expect(store['person1'].otherContacts[0][1].phones.length).toBe(3);
+  expect(Object.keys(entities).length).toBe(11);
+  expect(entities['person1'].articles.length).toBe(2);
+  expect(entities['person1'].contacts.dummy.phones.length).toBe(3);
+  expect(entities['person1'].otherContacts[0][0].phones.length).toBe(1);
+  expect(entities['person1'].otherContacts[0][1].phones.length).toBe(3);
 });
 
 test('nested entities', () => {
@@ -215,8 +215,8 @@ test('nested entities', () => {
 
   normalizeAndStore(newComment);
 
-  const store = getGraphQLCache();
+  const entities = store.getGraphQLCache();
 
-  expect(Object.keys(store).length).toBe(10);
-  expect(store['article1'].comments.length).toBe(3);
+  expect(Object.keys(entities).length).toBe(10);
+  expect(entities['article1'].comments.length).toBe(3);
 });

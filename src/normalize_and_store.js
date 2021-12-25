@@ -27,7 +27,7 @@ function doNormalizeAndStore(object, getObjectFromStore) {
 
       doNormalizeAndStore(entity, () => store.getEntityById(entity.id));
 
-      newPropValue = createProxy(entity, store.getEntityById);
+      newPropValue = createProxy(entity, store.getEntityById.bind(store));
 
     } else if (isObjectLiteral(propValue)) {
       newPropValue = doNormalizeAndStore(propValue, () => getObjectFromStore()?.[propName]);
@@ -50,7 +50,7 @@ function doNormalizeAndStore(object, getObjectFromStore) {
           array
             .map(entity => doNormalizeAndStore(entity, () => store.getEntityById(entity.id)))
             .filter(entity => !toRemove.includes(entity.id))
-            .map(entity => createProxy(entity, store.getEntityById));
+            .map(entity => createProxy(entity, store.getEntityById.bind(store)));
 
         if (append && getObjectFromStore()?.[propName]) {
           newPropValue =

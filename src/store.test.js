@@ -107,13 +107,13 @@ test('store', () => {
 
   expect(subscriber).toHaveBeenCalledTimes(3);
 
-  expect(store.countEntities(getGraphQLCache())).toBe(12);
-  expect(store.countEntities(getGraphQLCache({ id: 'tag1' }))).toBe(1);
-  expect(store.countEntities(getGraphQLCache({ __typename: 'Tag' }))).toBe(3);
-  expect(store.countEntities(getGraphQLCache({ __typename: 'Tag', label: 'foo' }))).toBe(2);
-  expect(store.countEntities(getGraphQLCache({ contacts: { dummy: { address: { street: 'Foo street' } } } }))).toBe(1);
-  expect(store.countEntities(getGraphQLCache({ contacts: { dummy: { address: { street: 'Bar street' } } } }))).toBe(0);
-  expect(store.countEntities(getGraphQLCache({ contacts: { dummy: { address: { zip: 'Foo street' } } } }))).toBe(0);
+  expect(store.countEntities(store.getGraphQLCache())).toBe(12);
+  expect(store.countEntities(store.getGraphQLCache({ id: 'tag1' }))).toBe(1);
+  expect(store.countEntities(store.getGraphQLCache({ __typename: 'Tag' }))).toBe(3);
+  expect(store.countEntities(store.getGraphQLCache({ __typename: 'Tag', label: 'foo' }))).toBe(2);
+  expect(store.countEntities(store.getGraphQLCache({ contacts: { dummy: { address: { street: 'Foo street' } } } }))).toBe(1);
+  expect(store.countEntities(store.getGraphQLCache({ contacts: { dummy: { address: { street: 'Bar street' } } } }))).toBe(0);
+  expect(store.countEntities(store.getGraphQLCache({ contacts: { dummy: { address: { zip: 'Foo street' } } } }))).toBe(0);
   
   const entities = store.getEntitiesByType('Tag');
   expect(store.countEntities(entities)).toBe(3);
