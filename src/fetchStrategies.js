@@ -41,18 +41,22 @@ export async function fetch({ strategy, isCached, fetchData, cacheData }) {
       } else {
         fetchData().then(data => cacheData(data));
       }
+      break;
 
     case strategies.CACHE_FIRST:
       if (!isCached) {
         cacheData(await fetchData());
       }
+      break;
 
     case strategies.NETWORK_ONLY:
       cacheData(await fetchData());
+      break;
 
     case strategies.CACHE_ONLY:
       if (!isCached) {
         throw new NotFoundInCacheError('not found in cache');
       }
+      break;
   }
 };
