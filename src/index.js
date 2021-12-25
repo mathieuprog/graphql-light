@@ -1,5 +1,5 @@
 import Client from './Client';
-import store from './Store';
+import store from './store';
 import Query from './Query';
 import DerivedQuery from './DerivedQuery';
 import Mutation from './mutation';
