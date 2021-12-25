@@ -104,6 +104,8 @@ Another function can optionally be passed as a fourth argument allowing to apply
 data into the cache. For example, if you want to convert datetime strings to `PlainDateTime` objects:
 
 ```javascript
+import { Query } from 'graphql-light';
+
 const articlesQuery = new Query(client, ARTICLES_QUERY, (entities, variables) => {
   const { userId } = variables;
 
@@ -166,6 +168,8 @@ Some data may be derived from other queries' responses. For example, say we have
 a user belongs to, with its locations, its services, etc.
 
 ```javascript
+import { Query } from 'graphql-light';
+
 const organizationsQuery = new Query(client, ORGANIZATIONS_QUERY, (variables, entities) => {
   const { userId } = variables;
 
@@ -251,6 +255,8 @@ export default `mutation CreateArticle($user: ArticleInput!) {
 ```
 
 ```javascript
+import { Mutation } from 'graphql-light';
+
 const createArticleMutation = new Mutation(client, CREATE_ARTICLE_MUTATION, ({ createArticle: data }) => {
   if (data.__typename !== 'CreateArticleSuccess') {
     return null;
@@ -374,9 +380,9 @@ Prioritizes consistency with server data, but can't provide a near-instantaneous
 In the example below, we want to convert dates formatted as strings into datetime objects:
 
 ```javascript
-import { setStoreConfig, transform } from 'graphql-light';
+import { store, transform } from 'graphql-light';
 
-setStoreConfig({ transformers: { transformArticle } });
+store.setConfig({ transformers: { transformArticle } });
 
 function transformArticle(article) {
   return transform(article, {
@@ -387,42 +393,34 @@ function transformArticle(article) {
 
 ### Inspect the global store (cache)
 
-`getGraphQLCache()` returns all the entities stored:
+The `store` object provides some utility functions to inspect the cached data. The object is accessible globally, so you may call its functions from the Chrome Web Inspector.
 
 ```javascript
-getGraphQLCache()
-```
-
-The function also accepts a filter allowing you to find specific entities from the store:
-
-```javascript
-getGraphQLCache({ __typename: 'Tag', label: 'foo' })
-```
-
-The library also provides some utility functions:
-
-```javascript
-getEntityById(id, subsetEntities)
+store.getEntities()
 ```
 
 ```javascript
-filterEntities({ label: 'foo' }, subsetEntities)
+store.getEntityById(id, subsetEntities)
 ```
 
 ```javascript
-getEntitiesByType('Tag', subsetEntities)
+store.filterEntities({ __typename: 'Tag', label: 'foo' }, subsetEntities)
 ```
 
 ```javascript
-countEntities(subsetEntities)
+store.getEntitiesByType('Tag', subsetEntities)
 ```
 
 ```javascript
-asList(subsetEntities)
+store.countEntities(subsetEntities)
 ```
 
 ```javascript
-one(subsetEntities)
+store.getEntitiesAsList(subsetEntities)
+```
+
+```javascript
+store.getSingleEntity(subsetEntities)
 ```
 
 For each of these functions, the `subsetEntities` parameter is optional. If omitted, they act on the whole store.

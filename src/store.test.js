@@ -107,21 +107,21 @@ test('store', () => {
 
   expect(subscriber).toHaveBeenCalledTimes(3);
 
-  expect(store.countEntities(store.getGraphQLCache())).toBe(12);
-  expect(store.countEntities(store.getGraphQLCache({ id: 'tag1' }))).toBe(1);
-  expect(store.countEntities(store.getGraphQLCache({ __typename: 'Tag' }))).toBe(3);
-  expect(store.countEntities(store.getGraphQLCache({ __typename: 'Tag', label: 'foo' }))).toBe(2);
-  expect(store.countEntities(store.getGraphQLCache({ contacts: { dummy: { address: { street: 'Foo street' } } } }))).toBe(1);
-  expect(store.countEntities(store.getGraphQLCache({ contacts: { dummy: { address: { street: 'Bar street' } } } }))).toBe(0);
-  expect(store.countEntities(store.getGraphQLCache({ contacts: { dummy: { address: { zip: 'Foo street' } } } }))).toBe(0);
+  expect(store.countEntities(store.getEntities())).toBe(12);
+  expect(store.countEntities(store.filterEntities({ id: 'tag1' }))).toBe(1);
+  expect(store.countEntities(store.filterEntities({ __typename: 'Tag' }))).toBe(3);
+  expect(store.countEntities(store.filterEntities({ __typename: 'Tag', label: 'foo' }))).toBe(2);
+  expect(store.countEntities(store.filterEntities({ contacts: { dummy: { address: { street: 'Foo street' } } } }))).toBe(1);
+  expect(store.countEntities(store.filterEntities({ contacts: { dummy: { address: { street: 'Bar street' } } } }))).toBe(0);
+  expect(store.countEntities(store.filterEntities({ contacts: { dummy: { address: { zip: 'Foo street' } } } }))).toBe(0);
   
   const entities = store.getEntitiesByType('Tag');
   expect(store.countEntities(entities)).toBe(3);
 
   expect(store.countEntities(store.filterEntities({ label: 'foo' }, entities))).toBe(2);
 
-  const t = () => store.one(store.filterEntities({ label: 'foo' }, entities));
+  const t = () => store.getSingleEntity(store.filterEntities({ label: 'foo' }, entities));
   expect(t).toThrow(Error);
 
-  expect(store.one(store.filterEntities({ label: 'foobar' }, entities)).label).toBe('foobar');
+  expect(store.getSingleEntity(store.filterEntities({ label: 'foobar' }, entities)).label).toBe('foobar');
 });

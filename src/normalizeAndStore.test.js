@@ -186,7 +186,7 @@ test('normalize and store', () => {
 
   normalizeAndStore(store, entity);
 
-  const entities = store.getGraphQLCache();
+  const entities = store.getEntities();
 
   expect(Object.keys(entities).length).toBe(11);
   expect(entities['person1'].articles.length).toBe(2);
@@ -215,7 +215,7 @@ test('nested entities', () => {
 
   normalizeAndStore(store, newComment);
 
-  const entities = store.getGraphQLCache();
+  const entities = store.getEntities();
 
   expect(Object.keys(entities).length).toBe(10);
   expect(entities['article1'].comments.length).toBe(3);

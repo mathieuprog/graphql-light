@@ -96,27 +96,19 @@ class Store {
     return Object.keys(entities).length;
   }
 
-  asList(entities) {
+  getEntitiesAsList(entities) {
     entities = entities || this.allEntities;
 
     return Object.values(entities);
   }
 
-  one(entities) {
-    const list = this.asList(entities);
+  getSingleEntity(entities) {
+    const list = this.getEntitiesAsList(entities);
     if (list.length !== 1) {
       throw new Error(`more than one entry: ${JSON.stringify(entities)}`);
     }
 
     return list[0];
-  }
-
-  getGraphQLCache(filterObject) {
-    if (!filterObject) {
-      return this.allEntities;
-    }
-  
-    return this.filterEntities(filterObject, this.allEntities);
   }
 }
 
