@@ -22,20 +22,22 @@ export default class Query {
 
     variables = variables || {};
 
+    let fetchedData = null;
+
     await getFetchStrategyAlgorithm(options?.fetchStrategy || FetchStrategy.CACHE_FIRST)({
       isCached: this.isCached(variables),
-      fetchData: () => this.fetchData(variables),
+      fetchData: () => fetchedData = this.fetchData(variables),
       cacheData: data => this.cacheData(data, variables)
     });
 
-    return Query.resolveAndSubscribe(variables, this.resolver, subscriber, getUnsubscribeFn);
+    return Query.resolveAndSubscribe(variables, this.resolver, subscriber, getUnsubscribeFn, fetchedData);
   }
 
-  static resolveAndSubscribe(variables, resolver, subscriber, getUnsubscribeFn) {
+  static resolveAndSubscribe(variables, resolver, subscriber, getUnsubscribeFn, fetchedData) {
     let isUpdate = false;
     let filteredData = null;
     const unsubscribe = store.subscribe(entities => {
-      const newFilteredData = resolver(variables, entities);
+      const newFilteredData = resolver(variables, entities, fetchedData);
 
       if (isUpdate) {
         if (newFilteredData !== filteredData) {

@@ -15,6 +15,8 @@ export default class DerivedQuery {
 
     variables = variables || {};
 
+    const fetchedData = [];
+
     const queries =
       this.queries
         .map(({ query, takeVariables }) => {
@@ -22,13 +24,13 @@ export default class DerivedQuery {
 
           return getFetchStrategyAlgorithm(options?.fetchStrategy || FetchStrategy.CACHE_FIRST)({
             isCached: query.isCached(variables),
-            fetchData: () => query.fetchData(variables),
+            fetchData: () => fetchedData.push(query.fetchData(variables)),
             cacheData: data => query.cacheData(data, variables)
           });
         });
 
     await Promise.all(queries);
 
-    return Query.resolveAndSubscribe(variables, this.resolver, subscriber, getUnsubscribeFn);
+    return Query.resolveAndSubscribe(variables, this.resolver, subscriber, getUnsubscribeFn, fetchedData);
   }
 }
