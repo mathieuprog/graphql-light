@@ -432,10 +432,6 @@ store.countEntities(subsetEntities)
 ```
 
 ```javascript
-store.getEntitiesAsList(subsetEntities)
-```
-
-```javascript
 store.getSingleEntity(subsetEntities)
 ```
 
