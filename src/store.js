@@ -96,14 +96,10 @@ class Store {
     return Object.keys(entities).length;
   }
 
-  getEntitiesAsList(entities) {
+  getSingleEntity(entities) {
     entities = entities || this.allEntities;
 
-    return Object.values(entities);
-  }
-
-  getSingleEntity(entities) {
-    const list = this.getEntitiesAsList(entities);
+    const list = Object.values(entities);
     if (list.length !== 1) {
       throw new Error(`more than one entry: ${JSON.stringify(entities)}`);
     }
