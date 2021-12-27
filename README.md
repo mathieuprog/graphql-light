@@ -82,7 +82,7 @@ import { Query } from 'graphql-light';
 import client from './client';
 import ARTICLES_QUERY from './queries/articles';
 
-const articlesQuery = new Query(client, ARTICLES_QUERY, (variables, entities) => {
+const articlesQuery = new Query(client, ARTICLES_QUERY, (variables, entities, _fetchedData) => {
   const { userId } = variables;
 
   return entities[userId].articles;
@@ -108,7 +108,7 @@ import { Query } from 'graphql-light';
 import client from './client';
 import ARTICLES_QUERY from './queries/articles';
 
-const articlesQuery = new Query(client, ARTICLES_QUERY, (variables, entities) => {
+const articlesQuery = new Query(client, ARTICLES_QUERY, (variables, entities, _fetchedData) => {
   const { userId } = variables;
 
   return entities[userId].articles;
@@ -123,6 +123,8 @@ const articlesQuery = new Query(client, ARTICLES_QUERY, (variables, entities) =>
 ```
 
 ### Fetch data
+
+#### `subscribe`
 
 ```javascript
 import { articlesQuery } from '../graphql';
@@ -164,6 +166,24 @@ watch for data updates.
 
 A fourth argument may be passed allowing to pass options. The only supported option for now is the [fetching strategy](#fetching-strategies).
 
+#### `query`
+
+If you don't need to listen to cache updates, you may call the `query` function:
+
+```javascript
+import { articlesQuery } from '../graphql';
+
+let articles = articlesQuery.query({ userId: 1 });
+
+// if using Svelte, you may use the await block to wait for the articles data
+
+{#await articles}
+  Loading...
+{:then resolvedArticles}
+  <!-- do something with the resolved data -->
+{/await}
+```
+
 ### Derived queries
 
 Some data may be derived from other queries' responses. For example, say we have a query to fetch the organizations that
@@ -174,7 +194,7 @@ import { Query } from 'graphql-light';
 import client from './client';
 import ORGANIZATIONS_QUERY from './queries/organizations';
 
-const organizationsQuery = new Query(client, ORGANIZATIONS_QUERY, (variables, entities) => {
+const organizationsQuery = new Query(client, ORGANIZATIONS_QUERY, (variables, entities, _fetchedData) => {
   const { userId } = variables;
 
   return entities[userId].organizations;
@@ -192,7 +212,7 @@ const locationsQuery = new DerivedQuery(
   [
     { query: organizationsQuery, takeVariables: ({ organization }) => ({ ...organization }) }
   ],
-  (variables, entities) => {
+  (variables, entities, _fetchedData) => {
     const { organization: { userId } } = variables;
     
     return entities[userId].organizations.flatMap(o => o.locations);
@@ -207,8 +227,8 @@ You need to provide an object with two properties:
 
 The second argument is the function that retrieves the requested data from the store after the response has been cached.
 
-Then you can call the `subscribe` function to fetch the data and watch for updates. The arguments for `subscribe` of `DerivedQuery` are the same
-as those for `subscribe` of `Query`.
+Then you can call the `subscribe` or `query` function to fetch the data. The arguments of these functions are the same
+as those of `Query`'s.
 
 ```javascript
 import { locationsQuery } from '../graphql';
