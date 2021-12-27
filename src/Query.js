@@ -1,27 +1,22 @@
+import AbstractQuery from './AbstractQuery';
 import store from './store';
 import { areObjectsEqual } from './utils';
 import FetchStrategy from './FetchStrategy';
 import getFetchStrategyAlgorithm from './getFetchStrategyAlgorithm';
 
-export default class Query {
+export default class Query extends AbstractQuery {
   // resolver: function retrieving the data from the cache and from the server's response data
   // transformer: function transforming data before storage
   constructor(client, queryDocument, resolver, transformer) {
+    super(resolver);
     this.client = client;
     this.queryDocument = queryDocument;
-    this.resolver = resolver;
     this.transformer = transformer || (data => data);
     this.fetching = [];
     this.cache = [];
   }
 
-  async subscribe(variables, subscriber, getUnsubscribeFn, options) {
-    if (!getUnsubscribeFn) {
-      throw new Error('must pass a callback as third argument to retrieve the unsubscribe function');
-    }
-
-    variables = variables || {};
-
+  async fetchAndCache(variables, options) {
     let fetchedData = null;
 
     await getFetchStrategyAlgorithm(options?.fetchStrategy || FetchStrategy.CACHE_FIRST)({
@@ -30,29 +25,7 @@ export default class Query {
       cacheData: data => this.cacheData(data, variables)
     });
 
-    return Query.resolveAndSubscribe(variables, this.resolver, subscriber, getUnsubscribeFn, fetchedData);
-  }
-
-  static resolveAndSubscribe(variables, resolver, subscriber, getUnsubscribeFn, fetchedData) {
-    let isUpdate = false;
-    let filteredData = null;
-    const unsubscribe = store.subscribe(entities => {
-      const newFilteredData = resolver(variables, entities, fetchedData);
-
-      if (isUpdate) {
-        if (newFilteredData !== filteredData) {
-          subscriber(newFilteredData);
-        }
-      } else {
-        isUpdate = true;
-      }
-
-      filteredData = newFilteredData;
-    });
-
-    getUnsubscribeFn(unsubscribe);
-
-    return filteredData;
+    return fetchedData;
   }
 
   async fetchData(variables) {
