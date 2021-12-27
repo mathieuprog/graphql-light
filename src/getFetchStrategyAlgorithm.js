@@ -4,6 +4,9 @@ import NotFoundInCacheError from './NotFoundInCacheError';
 export default function getFetchStrategyAlgorithm(strategy) {
   return async ({ isCached, fetchData, cacheData }) => {
     switch (strategy) {
+      default:
+        throw new Error(`unknown strategy ${strategy}`);
+
       case FetchStrategy.CACHE_AND_NETWORK:
         if (!isCached) {
           cacheData(await fetchData());
