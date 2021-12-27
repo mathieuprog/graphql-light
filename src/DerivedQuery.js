@@ -18,7 +18,11 @@ export default class DerivedQuery extends AbstractQuery {
 
           return getFetchStrategyAlgorithm(options?.fetchStrategy || FetchStrategy.CACHE_FIRST)({
             isCached: query.isCached(variables),
-            fetchData: () => fetchedData.push(query.fetchData(variables)),
+            fetchData: () => {
+              const data = query.fetchData(variables);
+              fetchedData.push(data);
+              return data;
+            },
             cacheData: data => query.cacheData(data, variables)
           });
         });
