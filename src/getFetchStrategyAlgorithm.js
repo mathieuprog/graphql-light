@@ -8,7 +8,7 @@ export default function getFetchStrategyAlgorithm(strategy) {
         if (!isCached) {
           cacheData(await fetchData());
         } else {
-          fetchData().then(data => cacheData(data));
+          fetchData().then(cacheData);
         }
         break;
   
