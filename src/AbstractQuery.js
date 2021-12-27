@@ -22,7 +22,7 @@ export default class AbstractQuery {
 
     const fetchedData = await this.fetchAndCache(variables, options);
 
-    return this.resolver(variables, entities, fetchedData);
+    return this.resolver(variables, store.getEntities(), fetchedData);
   }
 
   resolveAndSubscribe(variables, subscriber, getUnsubscribeFn) {
