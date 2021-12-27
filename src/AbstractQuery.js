@@ -14,7 +14,7 @@ export default class AbstractQuery {
 
     await this.fetchAndCache(variables, options);
 
-    return this.subscriber(variables, subscriber, getUnsubscribeFn);
+    return resolveAndSubscribe(variables, subscriber, getUnsubscribeFn);
   }
 
   async query(variables, options) {
