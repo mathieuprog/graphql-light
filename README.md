@@ -108,7 +108,7 @@ import { Query } from 'graphql-light';
 import client from './client';
 import ARTICLES_QUERY from './queries/articles';
 
-const articlesQuery = new Query(client, ARTICLES_QUERY, (entities, variables) => {
+const articlesQuery = new Query(client, ARTICLES_QUERY, (variables, entities) => {
   const { userId } = variables;
 
   return entities[userId].articles;
