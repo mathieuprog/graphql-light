@@ -5,6 +5,8 @@ import DerivedQuery from './DerivedQuery';
 import Mutation from './Mutation';
 import transform from './transform';
 import FetchStrategy from './FetchStrategy';
+import GraphQLError from './GraphQLError';
+import NotFoundInCacheError from './NotFoundInCacheError';
 
 export {
   Client,
@@ -13,5 +15,7 @@ export {
   DerivedQuery,
   Mutation,
   transform,
-  FetchStrategy
+  FetchStrategy,
+  GraphQLError,
+  NotFoundInCacheError
 }
