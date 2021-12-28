@@ -427,6 +427,42 @@ function transformArticle(article) {
 }
 ```
 
+### Errors
+
+You may catch GraphQL errors as seen in the example below:
+
+```javascript
+import { GraphQLError } from 'graphql-light';
+import GraphQLErrorCode from '../graphql';
+
+articlesPromise
+  .catch(error => {
+    if (error instanceof GraphQLError) {
+      const isUnauthenticated = error.graphQLErrors.some(error => {
+        return error.extensions.code === GraphQLErrorCode.UNAUTHENTICATED;
+      });
+
+      if (isUnauthenticated) {
+        // do something
+        return;
+      }
+    }
+
+    throw error;
+  });
+```
+
+`GraphQLErrorCode` in this example is just a custom object in the user's app:
+
+```javascript
+// 'graphql/GraphQLErrorCode.js'
+
+export default Object.freeze({
+  UNAUTHENTICATED: 'UNAUTHENTICATED',
+  // ...
+});
+```
+
 ### Inspect the global store (cache)
 
 The `store` object provides some utility functions to inspect the cached data. The object is accessible globally, so you may call its functions from the Chrome Web Inspector.
