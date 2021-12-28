@@ -22,11 +22,9 @@
  * Prioritizes consistency with server data, but can't provide a near-instantaneous response when cached data is available.
  */
 
-const FetchStrategy = Object.freeze({
+export default Object.freeze({
   CACHE_FIRST: 'CACHE_FIRST',
   CACHE_ONLY: 'CACHE_ONLY',
   CACHE_AND_NETWORK: 'CACHE_AND_NETWORK',
   NETWORK_ONLY: 'NETWORK_ONLY'
 });
-
-export default FetchStrategy;
