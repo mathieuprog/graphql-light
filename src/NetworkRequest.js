@@ -12,4 +12,8 @@ export default class NetworkRequest {
     this.query.cacheData(data, variables);
     return data;
   }
+
+  getQuery() {
+    return this.query;
+  }
 }

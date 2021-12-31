@@ -1,5 +1,6 @@
 import AbstractQuery from './AbstractQuery';
 import FetchStrategy from './FetchStrategy';
+import NetworkRequest from './NetworkRequest';
 
 export default class DerivedQuery extends AbstractQuery {
   constructor(queries, resolver) {
@@ -12,6 +13,10 @@ export default class DerivedQuery extends AbstractQuery {
       this.queries
         .map(({ query, takeVariables }, i) => {
           variables = takeVariables ? takeVariables(variables) : {};
+
+          if (query instanceof NetworkRequest) {
+            query = query.getQuery();
+          }
 
           return query.fetchByStrategy(variables, options?.fetchStrategy || FetchStrategy.CACHE_FIRST);
         });
