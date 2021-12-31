@@ -5,20 +5,28 @@ export default class AbstractQuery {
     this.resolver = resolver;
   }
 
-  async watch(variables, subscriber, getUnsubscribeFn, options) {
-    if (!getUnsubscribeFn) {
-      throw new Error('must pass a callback as third argument to retrieve the unsubscribe function');
+  async watch(variables, subscriber, getUnsubscribeFn, options = {}) {
+    if (!variables) {
+      throw new Error('invalid argument: variables');
     }
 
-    variables = variables || {};
+    if (!subscriber) {
+      throw new Error('invalid argument: subscriber');
+    }
+
+    if (!getUnsubscribeFn) {
+      throw new Error('invalid argument: getUnsubscribeFn');
+    }
 
     await this.fetchByStrategy(variables, options);
 
     return this.resolveAndSubscribe(variables, subscriber, getUnsubscribeFn);
   }
 
-  async query(variables, options) {
-    variables = variables || {};
+  async query(variables, options= {}) {
+    if (!variables) {
+      throw new Error('invalid argument: variables');
+    }
 
     await this.fetchByStrategy(variables, options);
 

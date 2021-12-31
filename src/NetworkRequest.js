@@ -5,11 +5,17 @@ export default class NetworkRequest {
     this.query = new Query(client, queryDocument, () => 1);
   }
 
-  async execute(variables) {
-    variables = variables || {};
+  async execute(variables, options = {}) {
+    if (!variables) {
+      throw new Error('invalid argument: variables');
+    }
 
     const data = await this.query.fetchData(variables);
-    this.query.cacheData(data, variables);
+
+    if (options.cache ?? true) {
+      this.query.cacheData(data, variables);
+    }
+
     return data;
   }
 

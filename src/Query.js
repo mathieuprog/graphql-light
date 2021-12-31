@@ -17,7 +17,7 @@ export default class Query extends AbstractQuery {
   }
 
   async fetchByStrategy(variables, options) {
-    await getFetchStrategyAlgorithm(options?.fetchStrategy || FetchStrategy.CACHE_FIRST)({
+    await getFetchStrategyAlgorithm(options.fetchStrategy || FetchStrategy.CACHE_FIRST)({
       isCached: this.isCached(variables),
       fetchData: () => this.fetchData(variables),
       cacheData: data => this.cacheData(data, variables)
