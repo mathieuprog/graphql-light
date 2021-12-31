@@ -6,6 +6,8 @@ export default class NetworkRequest {
   }
 
   async execute(variables) {
+    variables = variables || {};
+
     const data = await this.query.fetchData(variables);
     this.query.cacheData(data, variables);
     return data;
