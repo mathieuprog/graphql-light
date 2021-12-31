@@ -26,7 +26,7 @@ export default class Query extends AbstractQuery {
 
   async fetchData(variables) {
     const makePromise = () => this.client.request(this.queryDocument, variables);
-    let data = await executePromiseIfNotAlreadyPendingForVars(makePromise, variables);
+    let data = await this.executePromiseIfNotAlreadyPendingForVars(makePromise, variables);
 
     return this.transformer(data, variables);
   }
