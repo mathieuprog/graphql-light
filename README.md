@@ -6,9 +6,9 @@
 
 Entities are normalized and cached into a global store.
 
-### Subscribe to data updates
+### Watch for data updates
 
-You subscribe to queries: receive any updates on the fetched data after the initial fetch.
+Receive any updates on the fetched data after the initial fetch.
 
 ### Explicitness
 
@@ -93,12 +93,12 @@ export default {
 };
 ```
 
-A `Query` instance allows executing GraphQL requests through the `subscribe` function that it exposes (see below).
+A `Query` instance allows executing GraphQL requests through the `watch` function that it exposes (see below).
 
 The third argument passed to `Query`'s constructor is a function that retrieves the fetched data from the store. It may
 seem unnecessary and redundant as the server did the same operation (fetched the data from the DB), however this is
-needed in order to subscribe to data updates in the store; whenever there is an update in the store, this code is
-re-executed, and if the data changed, the listener is called (see `subscribe` and its second argument below).
+needed in order to watch for data updates in the store; whenever there is an update in the store, this code is
+re-executed, and if the data changed, the listener is called (see `watch` and its second argument below).
 
 Another function can optionally be passed as a fourth argument allowing to apply some transformations before storing the
 data into the cache. For example, if you want to convert datetime strings to `PlainDateTime` objects:
@@ -124,7 +124,7 @@ const articlesQuery = new Query(client, ARTICLES_QUERY, (variables, entities, _f
 
 ### Fetch data
 
-#### `subscribe`
+#### `watch`
 
 ```javascript
 import { articlesQuery } from '../graphql';
@@ -135,7 +135,7 @@ import { onDestroy } from 'svelte';
 
 const unsubscribers = [];
 
-let articles = articlesQuery.subscribe({ userId: 1 },
+let articles = articlesQuery.watch({ userId: 1 },
   updatedArticles => {
     articles = updatedArticles;
   },
@@ -154,7 +154,7 @@ onDestroy(() => unsubscribers.forEach(unsubscriber => unsubscriber()));
 {/await}
 ```
 
-The `subscribe` function allows to execute a GraphQL request and returns a promise which resolves into the requested
+The `watch` function allows to execute a GraphQL request and returns a promise which resolves into the requested
 data. The data is returned from the store through the function that you passed to the `Query` instance.
 
 The first argument is an object containing the variables that the GraphQL query requires.
@@ -214,7 +214,7 @@ const locationsQuery = new DerivedQuery(
   ],
   (variables, entities, _fetchedData) => {
     const { organization: { userId } } = variables;
-    
+
     return entities[userId].organizations.flatMap(o => o.locations);
   });
 ```
@@ -227,13 +227,13 @@ You need to provide an object with two properties:
 
 The second argument is the function that retrieves the requested data from the store after the response has been cached.
 
-Then you can call the `subscribe` or `query` function to fetch the data. The arguments of these functions are the same
+Then you can call the `watch` or `query` function to fetch the data. The arguments of these functions are the same
 as those of `Query`'s.
 
 ```javascript
 import { locationsQuery } from '../graphql';
 
-let locations = locationsQuery.subscribe({ organization: { userId: 1 } },
+let locations = locationsQuery.watch({ organization: { userId: 1 } },
   updatedLocations => {
     locations = updatedLocations;
   },
@@ -290,12 +290,12 @@ const createArticleMutation = new Mutation(client, CREATE_ARTICLE_MUTATION, ({ c
   if (data.__typename !== 'CreateArticleSuccess') {
     return null;
   }
-  
+
   const article = {
     ...data.article,
     publishDate: PlainDateTime.from(article.publishDate)
   };
-  
+
   const author = {
     ...author,
     articles: [article],
@@ -377,13 +377,13 @@ If you only want to remove an entity from a list, without deleting the entity, u
 
 ### Fetching strategies
 
-Different fetching strategies can be used when calling `subscribe`.
+Different fetching strategies can be used when calling `watch`.
 
 ```javascript
 import { FetchStrategy } from 'graphql-light';
 import { articlesQuery } from '../graphql';
 
-let articles = articlesQuery.subscribe({ userId: 1 },
+let articles = articlesQuery.watch({ userId: 1 },
   updatedArticles => articles = updatedArticles,
   unsubscribe => unsubscribers.push(unsubscribe),
   { fetchStrategy: FetchStrategy.CACHE_AND_NETWORK });

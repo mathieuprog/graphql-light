@@ -5,7 +5,7 @@ export default class AbstractQuery {
     this.resolver = resolver;
   }
 
-  async subscribe(variables, subscriber, getUnsubscribeFn, options) {
+  async watch(variables, subscriber, getUnsubscribeFn, options) {
     if (!getUnsubscribeFn) {
       throw new Error('must pass a callback as third argument to retrieve the unsubscribe function');
     }
