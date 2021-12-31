@@ -12,7 +12,7 @@ export default class AbstractQuery {
 
     variables = variables || {};
 
-    await this.fetchAndCache(variables, options);
+    await this.fetchByStrategy(variables, options);
 
     return this.resolveAndSubscribe(variables, subscriber, getUnsubscribeFn);
   }
@@ -20,9 +20,9 @@ export default class AbstractQuery {
   async query(variables, options) {
     variables = variables || {};
 
-    const fetchedData = await this.fetchAndCache(variables, options);
+    await this.fetchByStrategy(variables, options);
 
-    return this.resolver(variables, store.getEntities(), fetchedData);
+    return this.resolver(variables, store.getEntities());
   }
 
   resolveAndSubscribe(variables, subscriber, getUnsubscribeFn) {
@@ -47,7 +47,7 @@ export default class AbstractQuery {
     return filteredData;
   }
 
-  fetchAndCache() {
-    throw new Error("method `fetchAndCache(variables, options)` must be implemented");
+  fetchByStrategy() {
+    throw new Error("method `fetchByStrategy(variables, options)` must be implemented");
   }
 }

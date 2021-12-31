@@ -7,21 +7,15 @@ export default class DerivedQuery extends AbstractQuery {
     this.queries = queries;
   }
 
-  async fetchAndCache(variables, options) {
-    const fetchedData = [];
-
+  async fetchByStrategy(variables, options) {
     const queries =
       this.queries
-        .map(async ({ query, takeVariables }, i) => {
+        .map(({ query, takeVariables }, i) => {
           variables = takeVariables ? takeVariables(variables) : {};
 
-          const data = await query.fetchAndCache(variables, options?.fetchStrategy || FetchStrategy.CACHE_FIRST);
-          fetchedData[i] = data;
-          return data;
+          return query.fetchByStrategy(variables, options?.fetchStrategy || FetchStrategy.CACHE_FIRST);
         });
 
     await Promise.all(queries);
-
-    return fetchedData;
   }
 }

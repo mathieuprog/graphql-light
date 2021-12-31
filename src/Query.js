@@ -12,46 +12,21 @@ export default class Query extends AbstractQuery {
     this.client = client;
     this.queryDocument = queryDocument;
     this.transformer = transformer || (data => data);
-    this.pendingPromisesWithVarsWithVars = [];
+    this.pendingPromisesForVars = [];
     this.requestsMadeForVars = [];
   }
 
-  async fetchAndCache(variables, options) {
-    let fetchedData = null;
-
-    const pendingPromisesWithVars = this.pendingPromisesWithVars.find(({ variables: v }) => areObjectsEqual(v, variables));
-
-    if (pendingPromisesWithVars) {
-      fetchedData = await pendingPromisesWithVars.promise;
-    } else {
-      const promise = this.doFetchAndCache(variables, options);
-
-      this.pendingPromisesWithVars.push({ variables, promise });
-
-      try {
-        fetchedData = await promise;
-      } finally {
-        this.pendingPromisesWithVars = this.pendingPromisesWithVars.filter(({ variables: v }) => v !== variables);
-      }
-    }
-
-    return fetchedData;
-  }
-
-  async doFetchAndCache(variables, options) {
-    let fetchedData = null;
-
+  async fetchByStrategy(variables, options) {
     await getFetchStrategyAlgorithm(options?.fetchStrategy || FetchStrategy.CACHE_FIRST)({
       isCached: this.isCached(variables),
-      fetchData: () => fetchedData = this.fetchData(variables),
+      fetchData: () => this.fetchData(variables),
       cacheData: data => this.cacheData(data, variables)
     });
-
-    return fetchedData;
   }
 
   async fetchData(variables) {
-    let data = await this.client.request(this.queryDocument, variables);
+    const makePromise = () => this.client.request(this.queryDocument, variables);
+    let data = await executePromiseIfNotAlreadyPendingForVars(makePromise, variables);
 
     return this.transformer(data, variables);
   }
@@ -67,5 +42,27 @@ export default class Query extends AbstractQuery {
 
   isCached(variables) {
     return this.requestsMadeForVars.some(v => areObjectsEqual(v, variables));
+  }
+
+  async executePromiseIfNotAlreadyPendingForVars(getPromise, variables) {
+    const pendingPromisesForVars = this.pendingPromisesForVars.find(({ variables: v }) => areObjectsEqual(v, variables));
+
+    let result;
+
+    if (pendingPromisesForVars) {
+      result = await pendingPromisesForVars.promise;
+    } else {
+      const promise = getPromise();
+
+      this.pendingPromisesForVars.push({ variables, promise });
+
+      try {
+        result = await promise;
+      } finally {
+        this.pendingPromisesForVars = this.pendingPromisesForVars.filter(({ variables: v }) => v !== variables);
+      }
+    }
+
+    return result;
   }
 }

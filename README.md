@@ -82,7 +82,7 @@ import { Query } from 'graphql-light';
 import client from './client';
 import ARTICLES_QUERY from './queries/articles';
 
-const articlesQuery = new Query(client, ARTICLES_QUERY, (variables, entities, _fetchedData) => {
+const articlesQuery = new Query(client, ARTICLES_QUERY, (variables, entities) => {
   const { userId } = variables;
 
   return entities[userId].articles;
@@ -108,7 +108,7 @@ import { Query } from 'graphql-light';
 import client from './client';
 import ARTICLES_QUERY from './queries/articles';
 
-const articlesQuery = new Query(client, ARTICLES_QUERY, (variables, entities, _fetchedData) => {
+const articlesQuery = new Query(client, ARTICLES_QUERY, (variables, entities) => {
   const { userId } = variables;
 
   return entities[userId].articles;
@@ -194,7 +194,7 @@ import { Query } from 'graphql-light';
 import client from './client';
 import ORGANIZATIONS_QUERY from './queries/organizations';
 
-const organizationsQuery = new Query(client, ORGANIZATIONS_QUERY, (variables, entities, _fetchedData) => {
+const organizationsQuery = new Query(client, ORGANIZATIONS_QUERY, (variables, entities) => {
   const { userId } = variables;
 
   return entities[userId].organizations;
@@ -212,7 +212,7 @@ const locationsQuery = new DerivedQuery(
   [
     { query: organizationsQuery, takeVariables: ({ organization }) => ({ ...organization }) }
   ],
-  (variables, entities, _fetchedData) => {
+  (variables, entities) => {
     const { organization: { userId } } = variables;
 
     return entities[userId].organizations.flatMap(o => o.locations);
@@ -461,6 +461,16 @@ export default Object.freeze({
   UNAUTHENTICATED: 'UNAUTHENTICATED',
   // ...
 });
+```
+
+### Simple network requests
+
+```javascript
+import { NetworkRequest } from 'graphql-light';
+import client from './client';
+import ARTICLES_QUERY from './queries/articles';
+
+const promise = new NetworkRequest(client, ARTICLES_QUERY).execute(variables);
 ```
 
 ### Inspect the global store (cache)

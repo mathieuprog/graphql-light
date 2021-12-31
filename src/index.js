@@ -1,21 +1,23 @@
 import Client from './Client';
-import store from './store';
-import Query from './Query';
 import DerivedQuery from './DerivedQuery';
-import Mutation from './Mutation';
-import transform from './transform';
 import FetchStrategy from './FetchStrategy';
 import GraphQLError from './GraphQLError';
+import Mutation from './Mutation';
+import NetworkRequest from './NetworkRequest';
 import NotFoundInCacheError from './NotFoundInCacheError';
+import Query from './Query';
+import store from './store';
+import transform from './transform';
 
 export {
   Client,
-  store,
-  Query,
   DerivedQuery,
-  Mutation,
-  transform,
   FetchStrategy,
   GraphQLError,
-  NotFoundInCacheError
+  Mutation,
+  NetworkRequest,
+  NotFoundInCacheError,
+  Query,
+  store,
+  transform
 }
