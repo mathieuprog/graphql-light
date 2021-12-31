@@ -12,11 +12,33 @@ export default class Query extends AbstractQuery {
     this.client = client;
     this.queryDocument = queryDocument;
     this.transformer = transformer || (data => data);
-    this.fetching = [];
-    this.cache = [];
+    this.pendingPromisesWithVarsWithVars = [];
+    this.requestsMadeForVars = [];
   }
 
   async fetchAndCache(variables, options) {
+    let fetchedData = null;
+
+    const pendingPromisesWithVars = this.pendingPromisesWithVars.find(({ variables: v }) => areObjectsEqual(v, variables));
+
+    if (pendingPromisesWithVars) {
+      fetchedData = await pendingPromisesWithVars.promise;
+    } else {
+      const promise = this.doFetchAndCache(variables, options);
+
+      this.pendingPromisesWithVars.push({ variables, promise });
+
+      try {
+        fetchedData = await promise;
+      } finally {
+        this.pendingPromisesWithVars = this.pendingPromisesWithVars.filter(({ variables: v }) => v !== variables);
+      }
+    }
+
+    return fetchedData;
+  }
+
+  async doFetchAndCache(variables, options) {
     let fetchedData = null;
 
     await getFetchStrategyAlgorithm(options?.fetchStrategy || FetchStrategy.CACHE_FIRST)({
@@ -29,27 +51,9 @@ export default class Query extends AbstractQuery {
   }
 
   async fetchData(variables) {
-    let data;
+    let data = await this.client.request(this.queryDocument, variables);
 
-    const fetching = this.fetching.find(({ variables: v }) => areObjectsEqual(v, variables));
-
-    if (fetching) {
-      data = await fetching.promise;
-    } else {
-      const promise = this.client.request(this.queryDocument, variables);
-
-      this.fetching.push({ variables, promise });
-
-      try {
-        data = await promise;
-      } finally {
-        this.fetching = this.fetching.filter(({ variables: v }) => v !== variables);
-      }
-    }
-
-    data = this.transformer(data, variables);
-
-    return data;
+    return this.transformer(data, variables);
   }
 
   cacheData(data, variables) {
@@ -57,11 +61,11 @@ export default class Query extends AbstractQuery {
       store.store(data);
     }
 
-    this.cache = this.cache.filter(v => !areObjectsEqual(v, variables));
-    this.cache.push(variables);
+    this.requestsMadeForVars = this.requestsMadeForVars.filter(v => !areObjectsEqual(v, variables));
+    this.requestsMadeForVars.push(variables);
   }
 
   isCached(variables) {
-    return this.cache.some(v => areObjectsEqual(v, variables));
+    return this.requestsMadeForVars.some(v => areObjectsEqual(v, variables));
   }
 }

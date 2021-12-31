@@ -1,6 +1,5 @@
 import AbstractQuery from './AbstractQuery';
 import FetchStrategy from './FetchStrategy';
-import getFetchStrategyAlgorithm from './getFetchStrategyAlgorithm';
 
 export default class DerivedQuery extends AbstractQuery {
   constructor(queries, resolver) {
@@ -13,18 +12,12 @@ export default class DerivedQuery extends AbstractQuery {
 
     const queries =
       this.queries
-        .map(({ query, takeVariables }) => {
+        .map(async ({ query, takeVariables }, i) => {
           variables = takeVariables ? takeVariables(variables) : {};
 
-          return getFetchStrategyAlgorithm(options?.fetchStrategy || FetchStrategy.CACHE_FIRST)({
-            isCached: query.isCached(variables),
-            fetchData: () => {
-              const data = query.fetchData(variables);
-              fetchedData.push(data);
-              return data;
-            },
-            cacheData: data => query.cacheData(data, variables)
-          });
+          const data = await query.fetchAndCache(variables, options?.fetchStrategy || FetchStrategy.CACHE_FIRST);
+          fetchedData[i] = data;
+          return data;
         });
 
     await Promise.all(queries);

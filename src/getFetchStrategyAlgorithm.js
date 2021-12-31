@@ -14,17 +14,17 @@ export default function getFetchStrategyAlgorithm(strategy) {
           fetchData().then(cacheData);
         }
         break;
-  
+
       case FetchStrategy.CACHE_FIRST:
         if (!isCached) {
           cacheData(await fetchData());
         }
         break;
-  
+
       case FetchStrategy.NETWORK_ONLY:
         cacheData(await fetchData());
         break;
-  
+
       case FetchStrategy.CACHE_ONLY:
         if (!isCached) {
           throw new NotFoundInCacheError('not found in cache');
