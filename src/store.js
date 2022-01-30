@@ -1,16 +1,15 @@
+import collectUpdates from './collectUpdates';
 import normalizeAndStore from './normalizeAndStore';
+import transformServerData from './transformServerData';
 import { isObjectSubset } from './utils';
 
 class Store {
-  allEntities = {};
+  entities = {};
+  initializedAt = new Date();
   subscribers = new Set();
   config = { transformers: {} };
 
   subscribe(subscriber) {
-    if (Object.keys(this.allEntities).length > 0) {
-      subscriber(this.allEntities); // Call subscriber with current value
-    }
-
     const item = { subscriber };
 
     this.subscribers.add(item); // Subscribe to future values
@@ -20,40 +19,28 @@ class Store {
     };
   }
 
-  notifySubscribers() {
+  notifySubscribers(updates) {
     for (const { subscriber } of this.subscribers) {
-      subscriber(this.allEntities); // Call all subscriptions
+      subscriber(updates); // Call all subscriptions
     }
   }
 
   store(denormalizedData) {
+    denormalizedData = transformServerData(this.config.transformers, denormalizedData);
+
+    const { updates, updatesToListenTo } = collectUpdates(this.getEntityById.bind(this), denormalizedData);
+
     normalizeAndStore(this, denormalizedData);
-    this.notifySubscribers();
+
+    if (updates.length > 0) {
+      this.notifySubscribers(updates);
+    }
+
+    return { updatesToListenTo, denormalizedData };
   }
 
   initialize(normalizedData) {
-    this.allEntities = normalizedData
-  }
-
-  setEntity(entity) {
-    if (entity.__delete) {
-      delete this.allEntities[entity.id];
-      return entity;
-    }
-
-    delete entity.__unlink;
-    delete entity.__onReplace;
-
-    if (!this.allEntities[entity.id]) {
-      this.allEntities[entity.id] = entity;
-      return entity;
-    }
-
-    for (let [propName, propValue] of Object.entries(entity)) {
-      this.allEntities[entity.id][propName] = propValue;
-    }
-
-    return entity;
+    this.entities = normalizedData;
   }
 
   setConfig(newConfig) {
@@ -65,23 +52,23 @@ class Store {
   }
 
   getEntities() {
-    return this.allEntities;
+    return this.entities;
   }
 
   getEntityById(id, entities) {
-    entities = entities || this.allEntities;
+    entities = entities || this.entities;
 
     return entities[id];
   }
 
   getEntitiesByType(type, entities) {
-    entities = entities || this.allEntities;
+    entities = entities || this.entities;
 
     return this.filterEntities({ __typename: type }, entities);
   }
 
   filterEntities(filterObject, entities) {
-    entities = entities || this.allEntities;
+    entities = entities || this.entities;
 
     return Object.keys(entities).reduce((filteredEntities, key) => {
       return isObjectSubset(entities[key], filterObject)
@@ -91,13 +78,13 @@ class Store {
   }
 
   countEntities(entities) {
-    entities = entities || this.allEntities;
+    entities = entities || this.entities;
 
     return Object.keys(entities).length;
   }
 
   getSingleEntity(entities) {
-    entities = entities || this.allEntities;
+    entities = entities || this.entities;
 
     const list = Object.values(entities);
     if (list.length !== 1) {

@@ -1,25 +1,14 @@
-import Query from './Query';
-
 export default class NetworkRequest {
   constructor(client, queryDocument) {
-    this.query = new Query(client, queryDocument, () => 1);
+    this.client = client;
+    this.queryDocument = queryDocument;
   }
 
-  async execute(variables, options = {}) {
+  async execute(variables) {
     if (!variables) {
       throw new Error('invalid argument: variables');
     }
 
-    const data = await this.query.fetchData(variables);
-
-    if (options.cache ?? true) {
-      this.query.cacheData(data, variables);
-    }
-
-    return data;
-  }
-
-  getQuery() {
-    return this.query;
+    return await this.client.request(this.queryDocument, this.variables);
   }
 }

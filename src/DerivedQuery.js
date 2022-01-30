@@ -1,26 +1,14 @@
 import AbstractQuery from './AbstractQuery';
-import FetchStrategy from './FetchStrategy';
-import NetworkRequest from './NetworkRequest';
+import DerivedQueryForVars from './DerivedQueryForVars';
 
 export default class DerivedQuery extends AbstractQuery {
   constructor(queries, resolver) {
-    super(resolver);
+    super();
     this.queries = queries;
+    this.resolver = resolver;
   }
 
-  async fetchByStrategy(variables, options) {
-    const queries =
-      this.queries
-        .map(({ query, takeVariables }, i) => {
-          variables = takeVariables ? takeVariables(variables) : {};
-
-          if (query instanceof NetworkRequest) {
-            query = query.getQuery();
-          }
-
-          return query.fetchByStrategy(variables, options?.fetchStrategy || FetchStrategy.CACHE_FIRST);
-        });
-
-    await Promise.all(queries);
+  getQueryForVars(variables) {
+    return new DerivedQueryForVars(this, variables);
   }
 }

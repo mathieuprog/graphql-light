@@ -1,0 +1,5 @@
+export default Object.freeze({
+  CREATE_ENTITY: 'CREATE_ENTITY',
+  DELETE_ENTITY: 'DELETE_ENTITY',
+  UPDATE_PROP: 'UPDATE_PROP'
+});

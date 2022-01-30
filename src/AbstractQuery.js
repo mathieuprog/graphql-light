@@ -1,8 +1,12 @@
-import store from './store';
+import Watcher from './Watcher';
 
 export default class AbstractQuery {
-  constructor(resolver) {
-    this.resolver = resolver;
+  constructor() {
+    this.updateSubscribersForVars = [];
+  }
+
+  watcher(unsubscribeFn) {
+    return new Watcher(this, unsubscribeFn);
   }
 
   async watch(variables, subscriber, getUnsubscribeFn, options = {}) {
@@ -18,44 +22,32 @@ export default class AbstractQuery {
       throw new Error('invalid argument: getUnsubscribeFn');
     }
 
-    await this.fetchByStrategy(variables, options);
+    const queryForVars = this.getQueryForVars(variables);
 
-    return this.resolveAndSubscribe(variables, subscriber, getUnsubscribeFn);
+    await queryForVars.fetchByStrategy(options);
+
+    const resolved = queryForVars.resolve();
+
+    const unsubscribe = queryForVars.subscribe(subscriber);
+
+    getUnsubscribeFn(unsubscribe);
+
+    return resolved;
   }
 
-  async query(variables, options= {}) {
+  async query(variables, options = {}) {
     if (!variables) {
       throw new Error('invalid argument: variables');
     }
 
-    await this.fetchByStrategy(variables, options);
+    const queryForVars = this.getQueryForVars(variables);
 
-    return this.resolver(variables, store.getEntities());
+    await queryForVars.fetchByStrategy(options);
+
+    return queryForVars.resolve();
   }
 
-  resolveAndSubscribe(variables, subscriber, getUnsubscribeFn) {
-    let isUpdate = false;
-    let filteredData = null;
-    const unsubscribe = store.subscribe(entities => {
-      const newFilteredData = this.resolver(variables, entities);
-
-      if (isUpdate) {
-        if (newFilteredData !== filteredData) {
-          subscriber(newFilteredData);
-        }
-      } else {
-        isUpdate = true;
-      }
-
-      filteredData = newFilteredData;
-    });
-
-    getUnsubscribeFn(unsubscribe);
-
-    return filteredData;
-  }
-
-  fetchByStrategy() {
-    throw new Error("method `fetchByStrategy(variables, options)` must be implemented");
+  getQueryForVars() {
+    throw new Error("method `getQueryForVars(variables)` must be implemented");
   }
 }

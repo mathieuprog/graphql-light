@@ -4,15 +4,22 @@
   "description": "A simple GraphQL client",
   "funding": "https://github.com/mathieuprog/graphql-light?sponsor=1",
   "scripts": {
-    "test": "jest"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
+  "jest": {
+    "testEnvironment": "jest-environment-node",
+    "transform": {}
+  },
+  "type": "module",
   "devDependencies": {
-    "@babel/core": "^7.16.5",
-    "@babel/preset-env": "^7.16.5",
-    "jest": "^27.4.5"
+    "@babel/core": "^7.16.12",
+    "@babel/preset-env": "^7.16.11",
+    "dynamic-props-immutable": "^1.0.0",
+    "jest": "^27.4.7"
   },
   "dependencies": {
-    "ky": "^0.28.7"
+    "ky": "^0.28.7",
+    "object-array-utils": "^1.1.1"
   },
   "main": "src/index.js",
   "repository": {

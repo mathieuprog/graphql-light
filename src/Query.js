@@ -1,68 +1,49 @@
 import AbstractQuery from './AbstractQuery';
-import store from './store';
-import { areObjectsEqual } from './utils';
-import FetchStrategy from './FetchStrategy';
-import getFetchStrategyAlgorithm from './getFetchStrategyAlgorithm';
+import QueryForVars, { OnUnobservedStrategy } from './QueryForVars';
+
+export { OnUnobservedStrategy };
 
 export default class Query extends AbstractQuery {
   // resolver: function retrieving the data from the cache and from the server's response data
   // transformer: function transforming data before storage
-  constructor(client, queryDocument, resolver, transformer) {
-    super(resolver);
+  constructor(client, queryDocument) {
+    super();
+    this.userResolver = null;
     this.client = client;
     this.queryDocument = queryDocument;
-    this.transformer = transformer || (data => data);
-    this.pendingPromisesForVars = [];
-    this.requestsMadeForVars = [];
+    this.transformer = data => data;
+    this.onStoreUpdate = () => undefined;
+    this.queriesForVars = [];
+    this.getOnUnobservedStrategy = _variables => OnUnobservedStrategy.PAUSE_UPDATING;
   }
 
-  async fetchByStrategy(variables, options) {
-    await getFetchStrategyAlgorithm(options.fetchStrategy || FetchStrategy.CACHE_FIRST)({
-      isCached: this.isCached(variables),
-      fetchData: () => this.fetchData(variables),
-      cacheData: data => this.cacheData(data, variables)
-    });
+  setResolver(resolver) {
+    this.userResolver = resolver;
   }
 
-  async fetchData(variables) {
-    const makePromise = () => this.client.request(this.queryDocument, variables);
-    let data = await this.executePromiseIfNotAlreadyPendingForVars(makePromise, variables);
-
-    return this.transformer(data, variables);
+  setTransformer(transformer) {
+    this.transformer = transformer;
   }
 
-  cacheData(data, variables) {
-    if (data) {
-      store.store(data);
+  setOnStoreUpdate(onStoreUpdate) {
+    this.onStoreUpdate = onStoreUpdate;
+  }
+
+  setOnUnobservedStrategy(callback) {
+    this.getOnUnobservedStrategy = callback;
+  }
+
+  getQueryForVars(variables) {
+    const stringifiedVars = JSON.stringify(variables);
+    let queryForVars = this.queriesForVars[stringifiedVars];
+
+    if (!queryForVars) {
+      const executeRequest = () => this.client.request(this.queryDocument, this.variables);
+      const onUnobservedStrategy = this.getOnUnobservedStrategy(variables);
+      queryForVars = new QueryForVars(this, executeRequest, variables, onUnobservedStrategy);
+      this.queriesForVars[stringifiedVars] = queryForVars;
     }
 
-    this.requestsMadeForVars = this.requestsMadeForVars.filter(v => !areObjectsEqual(v, variables));
-    this.requestsMadeForVars.push(variables);
-  }
-
-  isCached(variables) {
-    return this.requestsMadeForVars.some(v => areObjectsEqual(v, variables));
-  }
-
-  async executePromiseIfNotAlreadyPendingForVars(getPromise, variables) {
-    const pendingPromisesForVars = this.pendingPromisesForVars.find(({ variables: v }) => areObjectsEqual(v, variables));
-
-    let result;
-
-    if (pendingPromisesForVars) {
-      result = await pendingPromisesForVars.promise;
-    } else {
-      const promise = getPromise();
-
-      this.pendingPromisesForVars.push({ variables, promise });
-
-      try {
-        result = await promise;
-      } finally {
-        this.pendingPromisesForVars = this.pendingPromisesForVars.filter(({ variables: v }) => v !== variables);
-      }
-    }
-
-    return result;
+    return queryForVars;
   }
 }

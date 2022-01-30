@@ -1,18 +1,18 @@
 import createProxy from './createProxy';
 import { isArray, isArrayOfEntities, isEntity, isObjectLiteral } from './utils';
 
-export default function normalizeAndStore(store, entities) {
-  [].concat(entities).forEach(entity => {
-    doNormalizeAndStore(store, entity, () => store.getEntityById(entity.id));
-  });
+export default function normalizeAndStore(store, data) {
+  [].concat(data).forEach(entity =>
+    doNormalizeAndStore(store, entity, () => store.getEntityById(entity.id)));
 }
 
+// `getObjectFromStore` argument is used for appending to an array of entities from nested object literals/arrays.
 function doNormalizeAndStore(store, object, getObjectFromStore) {
-  const objectIsEntity = isEntity(object);
-
-  if (objectIsEntity) {
-    object = store.getConfig().transformers[`transform${object.__typename}`]?.(object) ?? object;
+  if (!isObjectLiteral(object)) {
+    throw new Error(`unexpected condition, not an object literal: "${JSON.stringify(object)}"`);
   }
+
+  let normalizedObject = { ...object };
 
   for (let [propName, propValue] of Object.entries(object)) {
     if (['__unlink', '__delete', '__onReplace', 'id', '__typename'].includes(propName)) {
@@ -34,12 +34,11 @@ function doNormalizeAndStore(store, object, getObjectFromStore) {
     } else if (isArray(propValue)) {
       const array = propValue; // renaming for readability
 
-      if (isArrayOfEntities(array) || (array.length === 0 && object['__onReplace'])) {
+      if (isArrayOfEntities(array) || (array.length === 0 && object['__onReplace']?.[propName])) {
         const onReplace = object['__onReplace'];
         if (onReplace?.[propName] && !['override', 'append'].includes(onReplace[propName])) {
           throw new Error(`no or invalid \`__onReplace\` option for property \`${propName}\``);
         }
-
         const append = !!onReplace?.[propName] && onReplace[propName] === 'append';
 
         const toRemove = array.filter(entity => entity.__unlink || entity.__delete).map(({ id }) => id);
@@ -58,23 +57,45 @@ function doNormalizeAndStore(store, object, getObjectFromStore) {
               .concat(newPropValue);
         }
       } else {
-        const isArrayOfObjectLiterals = array.length > 0 && isObjectLiteral(array[0]);
-        const isArrayOfArrays = array.length > 0 && isArray(array[0]);
-
-        if (isArrayOfObjectLiterals || isArrayOfArrays) {
-          newPropValue =
-            array.map((element, i) =>
-              doNormalizeAndStore(store, element, () => getObjectFromStore()?.[propName]?.[i]));
-        }
+        newPropValue = processArrayRecursively(array, store, () => getObjectFromStore()?.[propName]);
       }
     }
 
-    object[propName] = newPropValue;
+    normalizedObject[propName] = newPropValue;
   }
 
-  if (objectIsEntity) {
-    object = store.setEntity(object);
+  if (isEntity(normalizedObject)) {
+    const entity = normalizedObject;
+
+    if (entity.__delete) {
+      delete store.entities[entity.id];
+      return entity;
+    }
+
+    delete entity.__unlink;
+    delete entity.__onReplace;
+
+    if (!store.entities[entity.id]) {
+      store.entities[entity.id] = entity;
+      return entity;
+    }
+
+    for (let [propName, propValue] of Object.entries(entity)) {
+      store.entities[entity.id][propName] = propValue;
+    }
   }
 
-  return object;
+  return normalizedObject;
+}
+
+function processArrayRecursively(array, store, getObjectFromStore) {
+  return array.map((element, i) => {
+    return isObjectLiteral(element)
+      ? doNormalizeAndStore(store, element, () => getObjectFromStore()?.[i])
+      : (
+        isArray(element)
+        ? processArrayRecursively(element, store, () => getObjectFromStore()?.[i])
+        : element
+      );
+  });
 }

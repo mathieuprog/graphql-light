@@ -1,6 +1,7 @@
 import createProxy from './createProxy';
-import normalizeAndStore from './normalizeAndStore';
+import collectUpdates from './collectUpdates';
 import store from './store';
+import { areArraysEqual } from './utils';
 
 const address1 = {
   id: 'address1',
@@ -134,7 +135,7 @@ beforeEach(() => {
   });
 });
 
-test('normalize and store', () => {
+test('collect updates', () => {
   const entity = {
     ...person1,
     name: 'John',
@@ -142,6 +143,10 @@ test('normalize and store', () => {
       {
         ...article1,
         title: 'My article',
+        comments: [
+          { ...comment1, article: article1 },
+          { ...comment2, article: article1 }
+        ],
         __delete: true
       },
       {
@@ -185,39 +190,76 @@ test('normalize and store', () => {
     arrayOfPrimitives: [1, 2]
   };
 
-  normalizeAndStore(store, entity);
+  const { updates, updatesToListenTo } = replaceEntityByItsId(collectUpdates(store.getEntityById.bind(store), entity));
 
-  const entities = store.getEntities();
-
-  expect(Object.keys(entities).length).toBe(11);
-  expect(entities['person1'].articles.length).toBe(2);
-  expect(entities['person1'].contacts.dummy.phones.length).toBe(3);
-  expect(entities['person1'].otherContacts[0][0].phones.length).toBe(1);
-  expect(entities['person1'].otherContacts[0][1].phones.length).toBe(3);
-});
-
-test('nested entities', () => {
-  const newComment = {
-    id: 'comment3',
-    __typename: 'Comment',
-    text: 'New comment',
-    article: {
-      id: 'article1',
-      __typename: 'Article',
-      comments: [
-        {
-          id: 'comment3',
-          __typename: 'Comment'
-        }
-      ],
-      __onReplace: { comments: 'append' }
+  const expectedUpdates = [
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'name' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'articles' },
+    { type: 'DELETE_ENTITY', entity: 'article1' },
+    { type: 'UPDATE_PROP', entity: 'article1', propName: 'title' },
+    { type: 'CREATE_ENTITY', entity: 'article4' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'contacts' },
+    { type: 'CREATE_ENTITY', entity: 'address2' },
+    { type: 'CREATE_ENTITY', entity: 'phone3' },
+    {
+      type: 'UPDATE_PROP',
+      entity: 'person1',
+      propName: 'otherContacts'
+    },
+    {
+      type: 'UPDATE_PROP',
+      entity: 'person1',
+      propName: 'objectLiteral'
+    },
+    {
+      type: 'UPDATE_PROP',
+      entity: 'person1',
+      propName: 'arrayOfPrimitives'
     }
-  };
+  ];
 
-  normalizeAndStore(store, newComment);
+  expect(
+    areArraysEqual(
+      expectedUpdates,
+      updates
+    )
+  ).toBeTruthy();
 
-  const entities = store.getEntities();
+  const expectedUpdatesToListenTo = [
+    { type: 'DELETE_ENTITY', entity: 'person1' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'name' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'age' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'articles' },
+    { type: 'DELETE_ENTITY', entity: 'article4' },
+    { type: 'UPDATE_PROP', entity: 'article4', propName: 'title' },
+    { type: 'UPDATE_PROP', entity: 'article4', propName: 'comments' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'contacts' },
+    { type: 'DELETE_ENTITY', entity: 'address2' },
+    { type: 'UPDATE_PROP', entity: 'address2', propName: 'street' },
+    { type: 'DELETE_ENTITY', entity: 'phone3' },
+    { type: 'UPDATE_PROP', entity: 'phone3', propName: 'number' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'otherContacts' },
+    { type: 'DELETE_ENTITY', entity: 'address1' },
+    { type: 'UPDATE_PROP', entity: 'address1', propName: 'street' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'objectLiteral' },
+    {
+      type: 'UPDATE_PROP',
+      entity: 'person1',
+      propName: 'arrayOfPrimitives'
+    }
+  ];
 
-  expect(Object.keys(entities).length).toBe(10);
-  expect(entities['article1'].comments.length).toBe(3);
+  expect(
+    areArraysEqual(
+      expectedUpdatesToListenTo,
+      updatesToListenTo
+    )
+  ).toBeTruthy();
 });
+
+function replaceEntityByItsId({ updates, updatesToListenTo }) {
+  updates = updates.map(e => ({ ...e, entity: e.entity.id }));
+  updatesToListenTo = updatesToListenTo.map(e => ({ ...e, entity: e.entity.id }));
+
+  return { updates, updatesToListenTo };
+}
