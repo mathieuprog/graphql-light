@@ -13,8 +13,9 @@ export default class Query extends AbstractQuery {
     this.queryDocument = queryDocument;
     this.transformer = data => data;
     this.onStoreUpdate = () => undefined;
-    this.queriesForVars = [];
+    this.queriesForVars = {};
     this.getOnUnobservedStrategy = _variables => OnUnobservedStrategy.PAUSE_UPDATING;
+    this.getOptions = _variables => ({});
   }
 
   setResolver(resolver) {
@@ -33,6 +34,10 @@ export default class Query extends AbstractQuery {
     this.getOnUnobservedStrategy = callback;
   }
 
+  setOptions(callback) {
+    this.getOptions = callback;
+  }
+
   getQueryForVars(variables) {
     const stringifiedVars = JSON.stringify(variables);
     let queryForVars = this.queriesForVars[stringifiedVars];
@@ -40,10 +45,17 @@ export default class Query extends AbstractQuery {
     if (!queryForVars) {
       const executeRequest = () => this.client.request(this.queryDocument, this.variables);
       const onUnobservedStrategy = this.getOnUnobservedStrategy(variables);
-      queryForVars = new QueryForVars(this, executeRequest, variables, onUnobservedStrategy);
+      const options = this.getOptions(variables);
+      queryForVars = new QueryForVars(this, executeRequest, variables, onUnobservedStrategy, options);
       this.queriesForVars[stringifiedVars] = queryForVars;
     }
 
     return queryForVars;
+  }
+
+  removeQueryForVars(variables) {
+    const stringifiedVars = JSON.stringify(variables);
+    this.queriesForVars[stringifiedVars].clear();
+    delete this.queriesForVars[stringifiedVars];
   }
 }

@@ -10,7 +10,7 @@ import { isObjectSubset } from './utils';
 export { OnUnobservedStrategy };
 
 export default class QueryForVars extends AbstractQueryForVars {
-  constructor(query, executeRequest, variables, onUnobservedStrategy) {
+  constructor(query, executeRequest, variables, onUnobservedStrategy, options) {
     super(variables);
     this.query = query;
     this.executeRequest = executeRequest;
@@ -21,12 +21,37 @@ export default class QueryForVars extends AbstractQueryForVars {
     this.subscribers = new Set();
     this.onUnobservedStrategy = onUnobservedStrategy;
 
-    this.clearWhenInactiveForDuration = null; // TODO
-    this.refreshAfterDuration = null; // TODO
+    this.options = options;
+    this.initTimeoutClearWhenInactiveForDuration = () => this._initTimeoutClearWhenInactiveForDuration(options);
+    this.initTimeoutRefreshAfterDuration(options);
 
     this.solicitedAt = null;
 
     this.strategy = this.getResolverStrategy();
+  }
+
+  _initTimeoutClearWhenInactiveForDuration({ clearWhenInactiveForDuration }) {
+    clearTimeout(this.timeoutClearWhenInactiveForDuration);
+
+    this.timeoutClearWhenInactiveForDuration = clearWhenInactiveForDuration && setTimeout(() => {
+      this.query.removeQueryForVars(this.variables);
+    }, clearWhenInactiveForDuration.total({ unit: 'millisecond' }));
+  }
+
+  initTimeoutRefreshAfterDuration({ refreshAfterDuration }) {
+    this.timeoutRefreshAfterDuration = refreshAfterDuration && setInterval(() => {
+      this.isCached = false;
+      this.strategy = this.getResolverStrategy();
+      this.fetchByStrategy({ fetchStrategy: FetchStrategy.NETWORK_ONLY });
+    }, refreshAfterDuration.total({ unit: 'millisecond' }));
+  }
+
+  clear() {
+    clearTimeout(this.timeoutClearWhenInactiveForDuration);
+    clearTimeout(this.timeoutRefreshAfterDuration);
+    this.subscribers.clear();
+    this.unsubscribeFromStore && this.unsubscribeFromStore();
+    this.unsubscribeFromStore = null;
   }
 
   getResolverStrategy() {
@@ -91,6 +116,7 @@ export default class QueryForVars extends AbstractQueryForVars {
 
     if (this.subscribers.size > 0) {
       this.solicitedAt = new Date();
+      this.initTimeoutClearWhenInactiveForDuration();
     }
   }
 
@@ -109,6 +135,7 @@ export default class QueryForVars extends AbstractQueryForVars {
 
   async fetchByStrategy(options) {
     this.solicitedAt = new Date();
+    this.initTimeoutClearWhenInactiveForDuration();
 
     await getFetchStrategyAlgorithm(options.fetchStrategy || FetchStrategy.CACHE_FIRST)({
       fetchData: this.fetchData.bind(this),

@@ -2,6 +2,7 @@ import store from './store';
 import Query from './Query';
 import FetchStrategy from './FetchStrategy';
 import { jest } from '@jest/globals';
+import { Temporal } from '@js-temporal/polyfill';
 
 function deepFreeze(obj) {
   Object.keys(obj).forEach(prop => {
@@ -297,22 +298,74 @@ test('unsubscribe', async () => {
   expect(getUnsubscriber).toHaveBeenCalledTimes(5);
 });
 
-// test('clearWhenInactiveForDuration', () => {
-//   store.store(denormalizedData);
+test('clearWhenInactiveForDuration', async () => {
+  store.store(denormalizedData);
 
-//   const unsubscriber = jest.fn();
+  const client = {
+    request(_queryDocument, _variables) {
+      return {};
+    }
+  }
 
-//   const client = {
-//     request(_queryDocument, _variables) {
-//       return {};
-//     }
-//   }
+  const query = new Query(client, null);
+  query.setOptions(_variables => ({
+    clearWhenInactiveForDuration: Temporal.Duration.from({ seconds: 1 })
+  }));
 
-//   const query = new Query(client, null);
+  await query.watch({}, () => 1, () => null);
 
-//   let data = await query.watch({}, () => 1, unsubscriber => unsubscriber1 = unsubscriber, {});
-// });
+  const sleep = (ms) => new Promise((resolve => setTimeout(resolve, ms)));
 
-// test('refreshAfterDuration', () => {
-//   store.store(denormalizedData);
-// });
+  await sleep(100);
+
+  expect(Object.keys(query.queriesForVars).length).toBe(1);
+
+  await sleep(1000);
+
+  expect(query.queriesForVars).toEqual({});
+
+  await query.watch({}, () => 1, () => null);
+
+  expect(Object.keys(query.queriesForVars).length).toBe(1);
+});
+
+test('refreshAfterDuration', async () => {
+  store.store(denormalizedData);
+
+  const executeRequest = jest.fn();
+
+  const client = {
+    request(_queryDocument, _variables) {
+      executeRequest();
+      return {};
+    }
+  }
+
+  const sleep = (ms) => new Promise((resolve => setTimeout(resolve, ms)));
+
+  const query1 = new Query(client, null);
+  await query1.watch({}, () => 1, () => null);
+  await sleep(200);
+  await query1.watch({}, () => 1, () => null);
+
+  expect(executeRequest).toHaveBeenCalledTimes(1);
+
+  const query2 = new Query(client, null);
+  await query2.watch({}, () => 1, () => null);
+  await sleep(200);
+  await query2.watch({}, () => 1, () => null);
+
+  expect(executeRequest).toHaveBeenCalledTimes(2);
+
+  const query3 = new Query(client, null);
+  query3.setOptions(_variables => ({
+    refreshAfterDuration: Temporal.Duration.from({ milliseconds: 100 })
+  }));
+  await query3.watch({}, () => 1, () => null);
+  await sleep(200);
+  await query3.watch({}, () => 1, () => null);
+
+  expect(executeRequest).toHaveBeenCalledTimes(4);
+
+  query3.removeQueryForVars({});
+});
