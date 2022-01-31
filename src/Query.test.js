@@ -273,10 +273,11 @@ test('unsubscribe then resubscribe', async () => {
   expect(data1).toEqual({ __typename: "Person", id: "person2", name: "James" });
 });
 
-test('unsubscribe', () => {
+test('unsubscribe', async () => {
   store.store(denormalizedData);
 
   const unsubscriber = jest.fn();
+  const getUnsubscriber = jest.fn();
 
   const client = {
     request(_queryDocument, _variables) {
@@ -289,8 +290,29 @@ test('unsubscribe', () => {
   const watcher = query.watcher(unsubscriber);
 
   for (let i = 0; i < 5; ++i) {
-    watcher.watch({}, () => null, unsubscriber, {});
+    await watcher.watch({}, () => null, getUnsubscriber, {});
   }
 
   expect(unsubscriber).toHaveBeenCalledTimes(4);
+  expect(getUnsubscriber).toHaveBeenCalledTimes(5);
 });
+
+// test('clearWhenInactiveForDuration', () => {
+//   store.store(denormalizedData);
+
+//   const unsubscriber = jest.fn();
+
+//   const client = {
+//     request(_queryDocument, _variables) {
+//       return {};
+//     }
+//   }
+
+//   const query = new Query(client, null);
+
+//   let data = await query.watch({}, () => 1, unsubscriber => unsubscriber1 = unsubscriber, {});
+// });
+
+// test('refreshAfterDuration', () => {
+//   store.store(denormalizedData);
+// });

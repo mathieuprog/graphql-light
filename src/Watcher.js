@@ -9,10 +9,8 @@ export default class Watcher {
     if (this.mustUnsubscribe) {
       this.unsubscribeFn();
     }
-    this.getUnsubscribeFn = getUnsubscribeFn;
-    this.query.watch(variables, subscriber, getUnsubscribeFn, options);
-
     this.mustUnsubscribe = true;
-  }
 
+    return this.query.watch(variables, subscriber, getUnsubscribeFn, options);
+  }
 }

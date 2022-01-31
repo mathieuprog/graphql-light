@@ -270,10 +270,11 @@ test('DerivedQuery with queries using query cache', async () => {
   expect(updater3).toHaveBeenCalledTimes(1);
 });
 
-test('unsubscribe', () => {
+test('unsubscribe', async () => {
   store.store(denormalizedData);
 
   const unsubscriber = jest.fn();
+  const getUnsubscriber = jest.fn();
 
   const client = {
     request(_queryDocument, _variables) {
@@ -288,8 +289,9 @@ test('unsubscribe', () => {
   const watcher = derivedQuery.watcher(unsubscriber);
 
   for (let i = 0; i < 5; ++i) {
-    watcher.watch({}, () => null, unsubscriber, {});
+    await watcher.watch({}, () => null, getUnsubscriber, {});
   }
 
   expect(unsubscriber).toHaveBeenCalledTimes(4);
+  expect(getUnsubscriber).toHaveBeenCalledTimes(5);
 });
