@@ -29,26 +29,26 @@ export default class QueryCacheStrategy extends AbstractQueryResolverStrategy {
   }
 
   processUpdates(updates, onStoreUpdate, isUpdate, notifySubscribers) {
-    let mustNotify = false;
+    const relevantUpdates = [];
 
     for (let update of updates) {
       const updateQueryCacheFun = onStoreUpdate(update);
 
       if (updateQueryCacheFun) {
         this.queryCache.set(updateQueryCacheFun(this.queryCache.get()));
-        mustNotify = true;
+        relevantUpdates.push(update);
         continue;
       }
 
       if (isUpdate(update)) {
         this.queryCache.applyUpdate(update);
-        mustNotify = true;
+        relevantUpdates.push(update);
         continue;
       }
     }
 
-    if (mustNotify) {
-      notifySubscribers(this.queryCache.get());
+    if (relevantUpdates.length > 0) {
+      notifySubscribers(this.queryCache.get(), relevantUpdates);
     }
   }
 }

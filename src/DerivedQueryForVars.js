@@ -1,5 +1,7 @@
+import store from './store';
 import AbstractQueryForVars from './AbstractQueryForVars';
 import FetchStrategy from './FetchStrategy';
+import { isObjectSubset } from './utils';
 
 export default class DerivedQueryForVars extends AbstractQueryForVars {
   constructor(derivedQuery, variables) {
@@ -22,13 +24,22 @@ export default class DerivedQueryForVars extends AbstractQueryForVars {
 
   resolve() {
     const resolvedData = this.queries.map(query => query.resolve());
-    return this.derivedQuery.resolver(resolvedData);
+    return this.derivedQuery.resolver(resolvedData, this.variables, store.getEntities());
   }
 
   subscribe(subscriber) {
-    const unsubscribers =
-      this.queries.map(query =>
-        query.subscribe(_data => subscriber(this.resolve())));
+    const _subscribe = (_data, updates) => {
+      for (let update of updates) {
+        const isUpdate = this.derivedQuery.onQueryUpdate(update, this.variables, isObjectSubset);
+
+        if (isUpdate || isUpdate === undefined) {
+          subscriber(this.resolve());
+          break;
+        }
+      }
+    }
+
+    const unsubscribers = this.queries.map(query => query.subscribe(_subscribe));
 
     return () => unsubscribers.forEach(unsubscribe => unsubscribe());
   }

@@ -6,6 +6,11 @@ export default class DerivedQuery extends AbstractQuery {
     super();
     this.queries = queries;
     this.resolver = resolver;
+    this.onQueryUpdate = () => undefined;
+  }
+
+  setOnQueryUpdate(onQueryUpdate) {
+    this.onQueryUpdate = onQueryUpdate;
   }
 
   getQueryForVars(variables) {

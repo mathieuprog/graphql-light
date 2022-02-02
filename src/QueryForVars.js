@@ -109,9 +109,9 @@ export default class QueryForVars extends AbstractQueryForVars {
     }
   }
 
-  notifySubscribers(data) {
+  notifySubscribers(data, updates) {
     for (const { subscriber } of this.subscribers) {
-      subscriber(data);
+      subscriber(data, updates);
     }
 
     if (this.subscribers.size > 0) {

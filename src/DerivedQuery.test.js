@@ -270,6 +270,71 @@ test('DerivedQuery with queries using query cache', async () => {
   expect(updater3).toHaveBeenCalledTimes(1);
 });
 
+  // TODO now
+test('DerivedQuery with setOnQueryUpdate', async () => {
+  store.store(denormalizedData);
+
+  const client = {
+    request(_queryDocument, _variables) {
+      return [
+        { id: 'person1', __typename: 'Person', name: 'John' },
+        { id: 'location1', __typename: 'Location', address: 'Foo street' },
+      ];
+    }
+  }
+
+  const queries = [
+    { query: new Query(client, null), takeVariables: () => ({}) }
+  ];
+
+  const resolver1 = jest.fn();
+  const resolver2 = jest.fn();
+
+  const derivedQuery1 = new DerivedQuery(queries, () => (resolver1(), 1));
+
+  const derivedQuery2 = new DerivedQuery(queries, () => (resolver2(), 1));
+  derivedQuery2.setOnQueryUpdate((update, _variables, match) => {
+    if (match(update, { entity: { __typename: 'Location' } })) return true;
+    return false;
+  });
+
+  expect(resolver1).toHaveBeenCalledTimes(0);
+  expect(resolver2).toHaveBeenCalledTimes(0);
+
+  await derivedQuery1.watch({}, () => null, () => null);
+  await derivedQuery2.watch({}, () => null, () => null);
+
+  expect(resolver1).toHaveBeenCalledTimes(1);
+  expect(resolver2).toHaveBeenCalledTimes(1);
+
+  client.request = (_queryDocument, _variables) => {
+    return { id: 'person1', __typename: 'Person', name: 'James' };
+  };
+
+  await (new Query(client, null)).query({});
+
+  expect(resolver1).toHaveBeenCalledTimes(2);
+  expect(resolver2).toHaveBeenCalledTimes(1);
+
+  client.request = (_queryDocument, _variables) => {
+    return { id: 'person2', __typename: 'Person', name: 'James' };
+  };
+
+  await (new Query(client, null)).query({});
+
+  expect(resolver1).toHaveBeenCalledTimes(2);
+  expect(resolver2).toHaveBeenCalledTimes(1);
+
+  client.request = (_queryDocument, _variables) => {
+    return { id: 'location1', __typename: 'Location', address: 'Bar street' };
+  };
+
+  await (new Query(client, null)).query({});
+
+  expect(resolver1).toHaveBeenCalledTimes(3);
+  expect(resolver2).toHaveBeenCalledTimes(2);
+});
+
 test('unsubscribe', async () => {
   store.store(denormalizedData);
 

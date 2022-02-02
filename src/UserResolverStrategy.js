@@ -18,19 +18,18 @@ export default class UserResolverStrategy extends AbstractQueryResolverStrategy 
   setFetchedData(_data) {}
 
   processUpdates(updates, onStoreUpdate, isUpdate, notifySubscribers) {
-    let mustResolve = false;
+    const relevantUpdates = [];
 
     for (let update of updates) {
       const _isUpdate = onStoreUpdate(update);
 
       if (_isUpdate || ((_isUpdate === undefined || _isUpdate === null) && isUpdate(update))) {
-        mustResolve = true;
-        break;
+        relevantUpdates.push(update);
       }
     }
 
-    if (mustResolve) {
-      notifySubscribers(this.resolve());
+    if (relevantUpdates.length > 0) {
+      notifySubscribers(this.resolve(), relevantUpdates);
     }
   }
 }
