@@ -1,39 +1,80 @@
 # GraphQL Light - a simple GraphQL client
 
-## Features
+* [Why GraphQL Light?](#why-graphql-light)
+* [Architecture](#architecture)
+  * [Global normalized cache](#global-normalized-cache)
+  * [Queries, derived queries and mutations](#queries-derived-queries-and-mutations)
+* [Limitations](#limitations)
+* [Getting started](#getting-started)
+  * [Instantiate and configure the client](#instantiate-and-configure-the-client)
+  * [Create a `Query` instance](#create-a-query-instance)
+  * [Fetch data using `query`](#fetch-data-using-query)
+  * [Fetch data using `watch`](#fetch-data-using-watch)
+  * [Create a `Mutation` instance](#create-a-mutation-instance)
+  * [Mutate data](#mutate-data)
+* [Manage the cache](#manage-the-cache)
+  * [Transform entities](#transform-entities)
+  * [Delete entities](#delete-entities)
+  * [Handling arrays](#handling-arrays)
+  * [Customize query behavior on cache updates](#customize-query-behavior-on-cache-updates)
+* [Advanced features](#advanced-features)
+  * [Query caching strategies](#query-caching-strategies)
+  * [Derived queries](#derived-queries)
+  * [Fetching strategies](#fetching-strategies)
+  * [Simple network requests](#simple-network-requests)
+  * [Errors](#errors)
+  * [Inspecting the cache](#inspecting-the-cache)
+* [Installation](#installation)
 
-### Caching of normalized entities
+## Why GraphQL Light?
 
-Entities are normalized and cached into a global store.
+`graphql-light` was written for three main reasons that differentiates it from other GraphQL clients:
 
-### Watch for data updates
+1. Cached entities are updated through explicit code written by the user; the user has full control over the caching, no magic involved.
 
-Receive any updates on the fetched data after the initial fetch.
+2. Cached entities are normalized, but the user can seamlessly access their nested entities (as if data is denormalized) with the use of proxies behind the scenes.
 
-### Explicitness
+3. Queries can be derived from other queries.
 
-The difference with other clients (such as Apollo) is that this library requires you to write code for each query that
-tells what to update in the cache, what data to retrieve for a query, etc.
+These features will become more clear throughout the reading of this documentation.
 
-More code is then needed to configure your GraphQL queries, but in return you also have way more understanding and full
-control over the way the data is processed and cached, as you code it yourself.
+## Architecture
 
-If you feel that Apollo is like a black box that often doesn't work the way you expect, is too complex, or is just too
-hard to understand, then have a look at how this library works as a GraphQL client.
+### Global normalized cache
+
+Entities (objects containing an `id` and `__typename`) fetched from the server are stored into a global cache. The entities are normalized. Nested entities are stored as proxies allowing to access the full object from the parent, and thus allowing chaining properties as if data is denormalized.
+
+A global cache has two main functions:
+
+1. When a query is addressed by the cache, a global cache ensures the data returned is the latest updated data.
+
+2. A global cache allows to keep track of updates and letting the user's application react to data updates: any component throughout the application can subscribe to cache updates.
+
+The global cache is also called store.
+
+### Queries, derived queries and mutations
+
+Queries and mutations are executed through instances of the `Query` and `Mutation` classes. One instance should be created per query, and shared across the application.
+
+Queries may be derived from other queries. This is useful for two scenarios:
+
+1. The user wants to execute a large query to initialize the application with data instead of a multitude of small queries, and wants to use different parts of the result in different parts of the application. For example, a large initial query includes the organization, the users, the services, etc. and derived queries return each of these data separately.
+
+2. The user wants to return data based on the result of multiple queries.
 
 ## Limitations
 
-Your objects must have global unique identifiers (e.g. UUIDv4). There is no plan to support sequential IDs.
+* objects must use global unique identifiers (e.g. UUIDv4) as their identifiers. There is no plan to support sequential IDs.
 
-Objects must have an `id` property storing their UUID.
+* objects must have an `id` property storing their UUID.
 
-The GraphQL server must return the `id` and `__typename` properties for every cacheable entity.
+* object properties `id` and `__typename` must be present for every cacheable entity.
 
-## Usage
+## Getting started
 
-### Instantiate and configure GraphQL Light's client
+### Instantiate and configure the client
 
-Create a `graphql/client.js` file in your project with the following content:
+Export an instance of `Client` which will be consumed by queries and mutations in order to execute requests:
 
 ```javascript
 import { Client } from 'graphql-light';
@@ -44,18 +85,18 @@ const client = new Client(url, { credentials: 'include' });
 export default client;
 ```
 
-The second parameter passed to `Client` are the options for the request, using the Fetch API:<br>
+The second argument of the constructor contains the settings to apply to the request, as used by the Fetch API. Refer to the Fetch API documentation for more information about these settings:<br>
 https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#supplying_request_options
 
-### Write a GraphQL query as a string
+### Create a `Query` instance
 
 ```javascript
-export default `query($userId: ID!) {
-  user(userId: $userId) {
-    __typename
-    id
+import { Query } from 'graphql-light';
+import client from './client';
 
-    articles {
+const articlesQuery =
+  new Query(client, `query($authorId: ID!) {
+    articles(authorId: $authorId) {
       __typename
       id
       title
@@ -67,326 +108,338 @@ export default `query($userId: ID!) {
         text
       }
     }
+  }`);
+
+export default articlesQuery;
+```
+
+### Fetch data using `query`
+
+```javascript
+import { articlesQuery } from './graphql';
+
+const articles = await articlesQuery.query({ authorId: 1 });
+```
+
+### Fetch data using `watch`
+
+Watching a query allows to get the response of query as well as any subsequent updates.
+
+```javascript
+import { articlesQuery } from './graphql';
+
+let unsubscriber;
+
+let articles =
+  articlesQuery.watch({ authorId: 1 },
+    updatedArticles => articles = updatedArticles,
+    unsubscribe => unsubscriber = unsubscribe
+  );
+```
+
+### Create a `Mutation` instance
+
+```javascript
+import { Mutation } from 'graphql-light';
+import client from './client';
+
+const createArticleMutation =
+  new Mutation(client, `mutation CreateArticle($user: ArticleInput!) {
+    createArticle(input: $article) {
+      __typename
+      id
+      title
+      publishDate
+
+      author {
+        __typename
+        id
+      }
+
+      comments {
+        __typename
+        id
+        text
+      }
+    }
+  }`);
+
+export default createArticleMutation;
+```
+
+### Mutate data
+
+```javascript
+import { createArticleMutation } from './graphql';
+
+createArticleMutation
+  .mutate({ id: article.id, name: article.name });
+```
+
+## Manage the cache
+
+### Transform entities
+
+When we request entities from the server, we often want to apply transformations to the incoming JSON data. Examples:
+
+* transform a date string into a `Temporal` object;
+* transform a foreign key to the corresponding object;
+* mark an entity as to be deleted;
+* etc.
+
+There are two ways to transform incoming data:
+
+1. by adding a transformer function to a specific query or mutation instance (via the `setTransformer` function).
+
+2. by adding global transformer functions as config to the store (via the `setConfig` function).
+
+In the example below, every incoming object with typename "Article" will have its `publishDate` data (received as a string from the server) converted to a `PlainDateTime` object.
+
+```javascript
+import { store, transform } from 'graphql-light';
+
+store.setConfig({ transformers: { transformArticle } });
+
+function transformArticle(article) {
+  return transform(article, {
+    publishDate: Temporal.PlainDateTime.from
+  });
+}
+```
+
+Another nice thing to do, is convert the foreign keys into objects, to allow chaining properties as if data is denormalized:
+
+```javascript
+function transformArticle(article) {
+  if ('authorId' in article) {
+    article.author = article.authorId;
+    delete article.authorId;
   }
-}`
+
+  return transform(article, {
+    author: authorId => ({
+      id: authorId,
+      __typename: 'Author'
+    }),
+    publishDate: Temporal.PlainDateTime.from
+  });
+}
 ```
 
-Save the code for example in a `graphql/queries/articles.js` file.
+The global transformers work with a convention, where the function name is prefixed by "transform" followed by the object's typename we want to transform. So in order to transform objects of type "Article", we create a function named `transformArticle`.
 
-It is important to always query the `__typename` and the `id` for every object that is or needs to be cached.
+### Delete entities
 
-### Create a Query instance
+Deleting entities from the cache is done by adding a flag `__delete` to the data:
 
 ```javascript
-import { Query } from 'graphql-light';
+import { Mutation } from 'graphql-light';
 import client from './client';
-import ARTICLES_QUERY from './queries/articles';
 
-const articlesQuery = new Query(client, ARTICLES_QUERY, (variables, entities) => {
-  const { userId } = variables;
+const deleteArticleMutation = new Mutation(client, `...`);
 
-  return entities[userId].articles;
+deleteArticleMutation.setTransformer(({ article }) => {
+  return { ...article, __delete: true };
 });
 
-export default {
-  articlesQuery
-};
+export default deleteArticleMutation;
 ```
 
-A `Query` instance allows executing GraphQL requests through the `watch` function that it exposes (see below).
+### Handling arrays
 
-The third argument passed to `Query`'s constructor is a function that retrieves the fetched data from the store. It may
-seem unnecessary and redundant as the server did the same operation (fetched the data from the DB), however this is
-needed in order to watch for data updates in the store; whenever there is an update in the store, this code is
-re-executed, and if the data changed, the listener is called (see `watch` and its second argument below).
+When entities are added or removed, we might need to add them into arrays or remove from arrays.
 
-Another function can optionally be passed as a fourth argument allowing to apply some transformations before storing the
-data into the cache. For example, if you want to convert datetime strings to `PlainDateTime` objects:
+In the example above, we removed an article from the cache. However, if we stored the author with its list of articles, we must also instruct the cache to remove the article from the articles list in author.
+
+To do so, instead of returning the article, we can return the author with its updated collection of articles:
 
 ```javascript
-import { Query } from 'graphql-light';
-import client from './client';
-import ARTICLES_QUERY from './queries/articles';
+deleteArticleMutation.setTransformer(({ article }) => ({
+  id: article.authorId,
+  __typename: 'Author',
+  articles: [{ ...article, __delete: true }],
+  __onReplace: { articles: 'append' }
+}));
+```
 
-const articlesQuery = new Query(client, ARTICLES_QUERY, (variables, entities) => {
-  const { userId } = variables;
+We add the article to delete into the author's `articles` list, and we specify that the given array is to be appended. If we want to override an array, we can specify `'override'` instead of `'append'`.
 
-  return entities[userId].articles;
-}, responseData => {
-  return responseData.user.articles.map(article => {
-    return {
-      ...article,
-      publishDate: PlainDateTime.from(article.publishDate)
-    };
+We can also do this work in the global transformer `transformArticle` that we wrote above:
+
+```javascript
+function transformArticle(article) {
+  if ('authorId' in article) {
+    article.author = article.authorId;
+    delete article.authorId;
+  }
+
+  return transform(article, {
+    author: authorId => ({
+      id: authorId,
+      __typename: 'Author',
+      articles: [
+        {
+          id: article.id,
+          __typename: 'Article',
+          __delete: article.__delete
+        }
+      ],
+      __onReplace: { articles: 'append' }
+    }),
+    publishDate: Temporal.PlainDateTime.from
   });
+}
+```
+
+In this case, we can just return the article in the transformer of the mutation:
+
+```javascript
+deleteArticleMutation.setTransformer(({ article }) => {
+  return { ...article, __delete: true };
 });
 ```
 
-### Fetch data
-
-#### `watch`
+If we want to remove an element from an array without deleting it, we can use the flag `__unlink` instead:
 
 ```javascript
-import { articlesQuery } from '../graphql';
-
-// import the callback function from your framework that is fired when the component unmounts
-// this example uses Svelte
-import { onDestroy } from 'svelte';
-
-const unsubscribers = [];
-
-let articles = articlesQuery.watch({ userId: 1 },
-  updatedArticles => {
-    articles = updatedArticles;
-  },
-  unsubscribe => {
-    unsubscribers.push(unsubscribe);
-  });
-
-onDestroy(() => unsubscribers.forEach(unsubscriber => unsubscriber()));
-
-// if using Svelte, you may use the await block to wait for the articles data
-
-{#await articles}
-  Loading...
-{:then resolvedArticles}
-  <!-- do something with the resolved data -->
-{/await}
+deleteArticleMutation.setTransformer(({ article }) => ({
+  id: article.authorId,
+  __typename: 'Author',
+  articles: [{ ...article, __unlink__: true }],
+  __onReplace: { articles: 'append' }
+}));
 ```
 
-The `watch` function allows to execute a GraphQL request and returns a promise which resolves into the requested
-data. The data is returned from the store through the function that you passed to the `Query` instance.
+### Customize query behavior on cache updates
 
-The first argument is an object containing the variables that the GraphQL query requires.
+When the server returns a response for a query, the response is traversed recursively to retrieve all the objects and properties that need to be watched for cache updates. The response is also cached at the query level in order to return the cached data for subsequent requests.
 
-The second argument is a callback function called whenever the stored data changes.
-
-The third argument allows you to retrieve the unsubscriber function which you need to call when you no longer need to
-watch for data updates.
-
-A fourth argument may be passed allowing to pass options. The only supported option for now is the [fetching strategy](#fetching-strategies).
-
-#### `query`
-
-If you don't need to listen to cache updates, you may call the `query` function:
+Commonly when dealing with arrays, we need to customize that behavior in order to add or remove entities from arrays. In the example below, we queried an author and we listen for newly created articles; any new article belonging to the author is added into the query's cache:
 
 ```javascript
-import { articlesQuery } from '../graphql';
+import { UpdateType } from 'graphql-light';
 
-let articles = articlesQuery.query({ userId: 1 });
+query.setOnStoreUpdate((update, variables, match) => {
+  if (match(update,
+      {
+        type: UpdateType.CREATE_ENTITY,
+        entity: { __typename: 'Article', authorId: variables.authorId }
+      })
+  ) {
+    return cache => ({ ...cache, articles: [...cache.articles, entity] });
+  }
+});
+```
 
-// if using Svelte, you may use the await block to wait for the articles data
+`match` is a handy function that allows to check if an object is a subset of another object. In this case, we check if the `update` matches a `CREATE_ENTITY` update type, concerns an `'Article'` and if the article belongs to the author we queried.
 
-{#await articles}
-  Loading...
-{:then resolvedArticles}
-  <!-- do something with the resolved data -->
-{/await}
+Possible update types are  `CREATE_ENTITY`, `DELETE_ENTITY` and `UPDATE_PROP`.
+
+## Advanced features
+
+### Query caching strategies
+
+By default, the response of a query is cached in the query instance. This cache is called the query cache and is different than the global cache, where the query cache is simply the denormalized response of the request.
+
+The query cache is updated if any object or property present has been updated in the global cache.
+
+When a query is called again, the query cache is returned.
+
+This default strategy is called the query cache strategy.
+
+Another strategy is available where the user writes a function that returns the response of the query. This strategy is called the user resolver strategy.
+
+```javascript
+query.setResolver((variables, entities) => {
+  return entities[variables.authorId];
+});
+```
+
+This strategy is faster for simple queries to resolve but may be slower for more complex queries than the query cache strategy.
+
+When using the user resolver strategy, the `onStoreUpdate` function should return a boolean when a match is found.
+
+The caching behavior can further be customized through the `setOnUnobservedStrategy` function:
+
+```javascript
+query.setOnUnobservedStrategy(_variables => {
+  return OnUnobservedStrategy.KEEP_UPDATING;
+});
+```
+
+This allows to specify whether the query should continue listening for cache updates or not when no subscribers (`watch` calls) are listening.
+
+By default, the value is `PAUSE_UPDATING`, but if the query is expected to be called frequently, it is more efficient to keep listening for cache updates, rather than rebuilding the response when called again.
+
+Lastly, a query may be given two options:
+* `clearWhenInactiveForDuration`: clean the query instance data and unsubscribe from cache updates after a given duration of inactivity.
+* `refreshAfterDuration`: re-execute the query on the server after a given duration.
+
+```javascript
+query.setOptions(_variables => ({
+  clearWhenInactiveForDuration: Temporal.Duration.from({ days: 1 }),
+  refreshAfterDuration: Temporal.Duration.from({ hours: 2 })
+}));
 ```
 
 ### Derived queries
 
-Some data may be derived from other queries' responses. For example, say we have a query to fetch the organizations that
-a user belongs to, with its locations, its services, etc.
+Derived queries allow to extract some part of data from larger queries, or allow to derive data from multiple queries.
 
-```javascript
-import { Query } from 'graphql-light';
-import client from './client';
-import ORGANIZATIONS_QUERY from './queries/organizations';
-
-const organizationsQuery = new Query(client, ORGANIZATIONS_QUERY, (variables, entities) => {
-  const { userId } = variables;
-
-  return entities[userId].organizations;
-});
-```
-
-You can create a `DerivedQuery` to retrieve derived data from the response of the organization's query. In this case,
-we want to retrieve all the locations that can already be fetched through the organization query above.
+Say we execute a large query to initialize the application with base data. In the code below, we retrieve only the members from larger query:
 
 ```javascript
 import { DerivedQuery } from 'graphql-light';
-import { organizationsQuery } from '../graphql';
+import organizationQuery from './organizationQuery';
 
-const locationsQuery = new DerivedQuery(
-  [
-    { query: organizationsQuery, takeVariables: ({ organization }) => ({ ...organization }) }
-  ],
-  (variables, entities) => {
-    const { organization: { userId } } = variables;
-
-    return entities[userId].organizations.flatMap(o => o.locations);
-  });
-```
-
-The first argument is a list of queries from which this query depends on. In this example, the locations are available
-from the response of the organization query.
-You need to provide an object with two properties:
-* `query`: the query we depend on;
-* `takeVariables`: the variables to take from the `subscription` function call (see below) for that specific query.
-
-The second argument is the function that retrieves the requested data from the store after the response has been cached.
-
-Then you can call the `watch` or `query` function to fetch the data. The arguments of these functions are the same
-as those of `Query`'s.
-
-```javascript
-import { locationsQuery } from '../graphql';
-
-let locations = locationsQuery.watch({ organization: { userId: 1 } },
-  updatedLocations => {
-    locations = updatedLocations;
-  },
-  unsubscribe => {
-    unsubscribers.push(unsubscribe);
-  });
-```
-
-As the query may depend on multiple other queries, it is a good idea to scope the variables. Here the location query
-depends on the organization query, so we create an organization object containing the variables for the organization
-query.
-
-### Mutations
-
-```javascript
-export default `mutation CreateArticle($user: ArticleInput!) {
-  createArticle(input: $article) {
-    __typename
-    ... on FormInputErrors {
-      errors {
-        key
-        message
+const membersQuery =
+  new DerivedQuery(
+    [
+      {
+        query: organizationQuery,
+        takeVariables: ({ organizationId }) => ({ organizationId })
       }
+    ],
+    ([organization]) => {
+      return organization.members;
     }
-    ... on CreateArticleSuccess {
-      article {
-        __typename
-        id
-        title
-        publishDate
+  );
 
-        author {
-          __typename
-          id
-        }
-
-        comments {
-          __typename
-          id
-          text
-        }
-      }
-    }
-  }
-}`;
+export default membersQuery;
 ```
 
+`DerivedQuery` shares the API of `Query`, so we can call `fetch` and `watch` to retrieve data and watch for cache updates.
+
+`DerivedQuery`'s constructor takes two arguments:
+
+* the first argument is a list of queries to depend on. `takeVariables` is a function that allows to take the variables (given to `fetch` or `watch`) corresponding to each query.
+* the second argument is the resolver function that returns the data. The resolver function's first argument is the list of responses of each query. In the example below, we depend only on one query, so we have a list of one item. The resolver function can also take a second and third argument which are the variables and the cached entities respectively.
+
+Similarly to `setOnStoreUpdate` for queries, derived queries may optionally specify a `setOnQueryUpdate` callback function allowing to filter out relevant updates only. In the example below, we specify we only want our derived query to resolve when updates concern a `'Member'`.
+
 ```javascript
-import { Mutation } from 'graphql-light';
-import client from './client';
-import CREATE_ARTICLE_MUTATION from './mutations/create-article';
+const membersQuery = new DerivedQuery(queries, resolver);
 
-const createArticleMutation = new Mutation(client, CREATE_ARTICLE_MUTATION, ({ createArticle: data }) => {
-  if (data.__typename !== 'CreateArticleSuccess') {
-    return null;
-  }
-
-  const article = {
-    ...data.article,
-    publishDate: PlainDateTime.from(article.publishDate)
-  };
-
-  const author = {
-    ...author,
-    articles: [article],
-    __onReplace: { articles: 'append' }
-  }
-
-  return author;
+membersQuery.setOnQueryUpdate((update, _variables, match) => {
+  if (match(update, { entity: { __typename: 'Member' } })) return true;
+  return false;
 });
 ```
-
-The third argument for `Mutation`'s constructor is a function that returns the data that will be normalized and stored
-in the cache.
-
-In the example above, if we simply return the newly created article, the author's list of articles won't be updated. For
-this reason we create an object representing an author (at least the `id` and `__typename` must be included) with a list
-of new articles to be appended in the list. This will update the author's list of articles but will also store the new
-article as the data is being normalized.
-
-Instead of appending you may also specify `'override'` in order to replace the whole list with the new list.
-
-```javascript
-import { createArticleMutation } from '../graphql';
-
-const newArticleData = {
-  name,
-  articles: articles.map(({ id }) => id)
-};
-
-createArticleMutation
-  .mutate({ id: article.id, article: newArticleData })
-  .then(({ createArticle: data }) => {
-    if (data.__typename === 'FormInputErrors') {
-      unexpectedErrorOccurred = true;
-      throw new UnexpectedFormErrors(data.errors);
-    }
-  })
-  .catch(e => {
-    unexpectedErrorOccurred = true;
-    throw e;
-  });
-```
-
-### Deleting entities
-
-When an entity has been deleted, you should also remove it from the cache.
-
-```javascript
-import { Mutation } from 'graphql-light';
-import client from './client';
-import DELETE_ARTICLE_MUTATION from './mutations/delete-article';
-
-const deleteArticleMutation = new Mutation(client, DELETE_ARTICLE_MUTATION, ({ deleteArticle: data }) => {
-  if (data.__typename !== 'DeleteArticleSuccess') {
-    return null;
-  }
-
-  const article = {
-    ...data.article,
-    __delete: true
-  };
-
-  const author = {
-    ...author,
-    articles: [article],
-    __onReplace: { articles: 'append' }
-  }
-
-  return author;
-});
-```
-
-Add a property `__delete` to the entity that you want to remove from the cache.
-
-In the example above, we cannot just return the article; we must also return the author with its list of articles, as
-the deleted article should also be removed from that list. This should be done for every list that contains the deleted
-article.
-
-If you only want to remove an entity from a list, without deleting the entity, use `__unlink` and set it to `true`.
 
 ### Fetching strategies
 
-Different fetching strategies can be used when calling `watch`.
+Different fetch strategies are supported for the `query` and `watch` functions:
 
 ```javascript
 import { FetchStrategy } from 'graphql-light';
-import { articlesQuery } from '../graphql';
+import { articlesQuery } from './graphql';
 
-let articles = articlesQuery.watch({ userId: 1 },
-  updatedArticles => articles = updatedArticles,
-  unsubscribe => unsubscribers.push(unsubscribe),
-  { fetchStrategy: FetchStrategy.CACHE_AND_NETWORK });
+let articles =
+  articlesQuery.watch({ authorId: 1 },
+    updatedArticles => articles = updatedArticles,
+    unsubscribe => unsubscriber = unsubscribe,
+    { fetchStrategy: FetchStrategy.CACHE_AND_NETWORK }
+  );
 ```
 
 #### `FetchStrategy.CACHE_FIRST` (default)
@@ -411,69 +464,43 @@ Executes the full query against your GraphQL server, without first checking the 
 
 Prioritizes consistency with server data, but can't provide a near-instantaneous response when cached data is available.
 
-### Global function to transform data before caching
-
-In the example below, we want to convert dates formatted as strings into datetime objects:
-
-```javascript
-import { store, transform } from 'graphql-light';
-
-store.setConfig({ transformers: { transformArticle } });
-
-function transformArticle(article) {
-  return transform(article, {
-    publishDate: Temporal.PlainDateTime.from
-  });
-}
-```
-
-### Errors
-
-You may catch GraphQL errors as seen in the example below:
-
-```javascript
-import { GraphQLError } from 'graphql-light';
-import GraphQLErrorCode from '../graphql';
-
-articlesPromise
-  .catch(error => {
-    if (error instanceof GraphQLError) {
-      const isUnauthenticated = error.graphQLErrors.some(error => {
-        return error.extensions.code === GraphQLErrorCode.UNAUTHENTICATED;
-      });
-
-      if (isUnauthenticated) {
-        // do something
-        return;
-      }
-    }
-
-    throw error;
-  });
-```
-
-`GraphQLErrorCode` in this example is just a custom object in the user's app:
-
-```javascript
-// 'graphql/GraphQLErrorCode.js'
-
-export default Object.freeze({
-  UNAUTHENTICATED: 'UNAUTHENTICATED',
-  // ...
-});
-```
-
 ### Simple network requests
+
+A `NetworkRequest` instance allows to execute a GraphQL request without any caching and transformation:
 
 ```javascript
 import { NetworkRequest } from 'graphql-light';
 import client from './client';
-import ARTICLES_QUERY from './queries/articles';
 
-const promise = new NetworkRequest(client, ARTICLES_QUERY).execute(variables);
+const promise = new NetworkRequest(client, `...`).execute(variables);
 ```
 
-### Inspect the global store (cache)
+### Errors
+
+`GraphQLError` is a custom error type that is thrown when the server returns GraphQL errors. It holds a `graphQLErrors` property that contains the list of errors.
+
+In some cases you might want to catch such errors, for example when handling authentication errors:
+
+```javascript
+import { GraphQLError } from 'graphql-light';
+
+someQuery.catch(error => {
+  if (error instanceof GraphQLError) {
+    const isUnauthenticated = error.graphQLErrors.some(error => {
+      return error.extensions.code === 'unauthenticated';
+    });
+
+    if (isUnauthenticated) {
+      // do something
+      return;
+    }
+  }
+
+  throw error;
+});
+```
+
+### Inspecting the cache
 
 The `store` object provides some utility functions to inspect the cached data. The object is accessible globally, so you may call its functions from the Chrome Web Inspector.
 
@@ -499,6 +526,10 @@ store.countEntities(subsetEntities)
 
 ```javascript
 store.getSingleEntity(subsetEntities)
+```
+
+```javascript
+store.subscribe(console.log)
 ```
 
 For each of these functions, the `subsetEntities` parameter is optional. If omitted, they act on the whole store.
