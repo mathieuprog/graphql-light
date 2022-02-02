@@ -1,17 +1,8 @@
 import OnUnobservedStrategy from './OnUnobservedStrategy';
 import Query from './Query';
 import UpdateType from './UpdateType';
+import { deepFreeze } from './utils';
 import { jest } from '@jest/globals';
-
-function deepFreeze(obj) {
-  Object.keys(obj).forEach(prop => {
-    if (typeof obj[prop] === 'object' && !Object.isFrozen(obj[prop])) {
-      deepFreeze(obj[prop]);
-    }
-  });
-
-  return Object.freeze(obj);
-}
 
 const denormalizedData = deepFreeze({
   id: 'person1',

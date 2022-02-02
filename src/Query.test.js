@@ -1,18 +1,9 @@
 import store from './store';
 import Query from './Query';
 import FetchStrategy from './FetchStrategy';
+import { deepFreeze } from './utils';
 import { jest } from '@jest/globals';
 import { Temporal } from '@js-temporal/polyfill';
-
-function deepFreeze(obj) {
-  Object.keys(obj).forEach(prop => {
-    if (typeof obj[prop] === 'object' && !Object.isFrozen(obj[prop])) {
-      deepFreeze(obj[prop]);
-    }
-  });
-
-  return Object.freeze(obj);
-}
 
 const denormalizedData = deepFreeze({
   id: 'person1',

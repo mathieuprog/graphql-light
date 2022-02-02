@@ -1,17 +1,7 @@
 import store from './store';
 import transform from './transform';
-import { isArray } from './utils';
+import { deepFreeze, isArray } from './utils';
 import { jest } from '@jest/globals';
-
-function deepFreeze(obj) {
-  Object.keys(obj).forEach(prop => {
-    if (typeof obj[prop] === 'object' && !Object.isFrozen(obj[prop])) {
-      deepFreeze(obj[prop]);
-    }
-  });
-
-  return Object.freeze(obj);
-}
 
 const denormalizedData = deepFreeze({ // test immutability
   id: 'person1',

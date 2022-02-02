@@ -1,15 +1,6 @@
 import transformServerData from './transformServerData';
 import transform from './transform';
-
-function deepFreeze(obj) {
-  Object.keys(obj).forEach(prop => {
-    if (typeof obj[prop] === 'object' && !Object.isFrozen(obj[prop])) {
-      deepFreeze(obj[prop]);
-    }
-  });
-
-  return Object.freeze(obj);
-}
+import { deepFreeze } from './utils';
 
 const denormalizedData = deepFreeze({
   id: 'person1',
