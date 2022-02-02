@@ -5,6 +5,10 @@ export default class Mutation {
   constructor(client, queryDocument, transformer) {
     this.client = client;
     this.queryDocument = queryDocument;
+    this.transformer = data => data;
+  }
+
+  setTransformer(transformer) {
     this.transformer = transformer;
   }
 
