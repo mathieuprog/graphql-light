@@ -15,7 +15,7 @@ function doNormalizeAndStore(store, object, getObjectFromStore) {
   let normalizedObject = { ...object };
 
   for (let [propName, propValue] of Object.entries(object)) {
-    if (['__unlink', '__delete', '__onReplace', 'id', '__typename'].includes(propName)) {
+    if (['__unlink', '__delete', '__onArray', 'id', '__typename'].includes(propName)) {
       continue;
     }
 
@@ -34,12 +34,12 @@ function doNormalizeAndStore(store, object, getObjectFromStore) {
     } else if (isArray(propValue)) {
       const array = propValue; // renaming for readability
 
-      if (isArrayOfEntities(array) || (array.length === 0 && object['__onReplace']?.[propName])) {
-        const onReplace = object['__onReplace'];
-        if (onReplace?.[propName] && !['override', 'append'].includes(onReplace[propName])) {
-          throw new Error(`no or invalid \`__onReplace\` option for property \`${propName}\``);
+      if (isArrayOfEntities(array) || (array.length === 0 && object['__onArray']?.[propName])) {
+        const onArray = object['__onArray'];
+        if (onArray?.[propName] && !['override', 'append'].includes(onArray[propName])) {
+          throw new Error(`no or invalid \`__onArray\` option for property \`${propName}\``);
         }
-        const append = !!onReplace?.[propName] && onReplace[propName] === 'append';
+        const append = !!onArray?.[propName] && onArray[propName] === 'append';
 
         const toRemove = array.filter(entity => entity.__unlink || entity.__delete).map(({ id }) => id);
         const toAdd = array.filter(({ id }) => !toRemove.includes(id)).map(({ id }) => id);
@@ -73,7 +73,7 @@ function doNormalizeAndStore(store, object, getObjectFromStore) {
     }
 
     delete entity.__unlink;
-    delete entity.__onReplace;
+    delete entity.__onArray;
 
     if (!store.entities[entity.id]) {
       store.entities[entity.id] = entity;

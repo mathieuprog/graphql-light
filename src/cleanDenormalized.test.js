@@ -23,7 +23,7 @@ const denormalizedData = {
           __unlink: false
         },
       ],
-      __onReplace: { tags: 'override' },
+      __onArray: { tags: 'override' },
     },
     {
       id: 'article2',
@@ -43,10 +43,10 @@ const denormalizedData = {
           __unlink: true
         },
       ],
-      __onReplace: { tags: 'override' },
+      __onArray: { tags: 'override' },
     }
   ]],
-  __onReplace: { articles: 'append' },
+  __onArray: { articles: 'append' },
   contacts: {
     dummy: {
       address: {
@@ -66,21 +66,21 @@ const denormalizedData = {
           number: '20'
         }
       ],
-      __onReplace: { phones: 'append' }
+      __onArray: { phones: 'append' }
     }
   }
 };
 
 test('clean', () => {
-  expect(denormalizedData.__onReplace).toBeTruthy();
-  expect(denormalizedData.articles[0][0].__onReplace).toBeTruthy();
+  expect(denormalizedData.__onArray).toBeTruthy();
+  expect(denormalizedData.articles[0][0].__onArray).toBeTruthy();
   expect(denormalizedData.articles[0][0].tags.length).toBe(2);
   expect(denormalizedData.articles[0][1].tags.length).toBe(2);
 
   cleanDenormalized(denormalizedData);
 
-  expect(denormalizedData.__onReplace).toBe(undefined);
-  expect(denormalizedData.articles[0][0].__onReplace).toBe(undefined);
+  expect(denormalizedData.__onArray).toBe(undefined);
+  expect(denormalizedData.articles[0][0].__onArray).toBe(undefined);
   expect(denormalizedData.articles[0][0].tags.length).toBe(1);
   expect(denormalizedData.articles[0][1].tags.length).toBe(1);
 });

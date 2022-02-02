@@ -10,7 +10,7 @@ const denormalizedData = deepFreeze({ // test immutability
   test: [[1, 2]],
   articles: [[{ foo: [[ // just testing nested arrays
     {
-      __onReplace: { articles: 'append' },
+      __onArray: { articles: 'append' },
       articles: [
         {
           id: 'article1',
@@ -28,7 +28,7 @@ const denormalizedData = deepFreeze({ // test immutability
               label: 'foobar'
             },
           ],
-          __onReplace: { tags: 'override' },
+          __onArray: { tags: 'override' },
         },
         {
           id: 'article2',
@@ -46,7 +46,7 @@ const denormalizedData = deepFreeze({ // test immutability
               label: 'foobar'
             },
           ],
-          __onReplace: { tags: 'override' },
+          __onArray: { tags: 'override' },
         }
       ]
     }
@@ -70,7 +70,7 @@ const denormalizedData = deepFreeze({ // test immutability
           number: '20'
         }
       ],
-      __onReplace: { phones: 'append' }
+      __onArray: { phones: 'append' }
     }
   }
 });

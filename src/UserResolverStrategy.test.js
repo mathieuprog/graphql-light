@@ -11,7 +11,7 @@ const denormalizedData = deepFreeze({
   test: [[1, 2]],
   articles: [[{ foo: [[
     {
-      __onReplace: { articles: 'append' },
+      __onArray: { articles: 'append' },
       articles: [
         {
           id: 'article1',
@@ -29,7 +29,7 @@ const denormalizedData = deepFreeze({
               label: 'foobar'
             },
           ],
-          __onReplace: { tags: 'override' },
+          __onArray: { tags: 'override' },
         },
         {
           id: 'article2',
@@ -47,7 +47,7 @@ const denormalizedData = deepFreeze({
               label: 'foobar'
             },
           ],
-          __onReplace: { tags: 'override' },
+          __onArray: { tags: 'override' },
         }
       ]
     }
@@ -71,7 +71,7 @@ const denormalizedData = deepFreeze({
           number: '20'
         }
       ],
-      __onReplace: { phones: 'append' }
+      __onArray: { phones: 'append' }
     }
   }
 });

@@ -258,7 +258,7 @@ deleteArticleMutation.setTransformer(({ article }) => ({
   id: article.authorId,
   __typename: 'Author',
   articles: [{ ...article, __delete: true }],
-  __onReplace: { articles: 'append' }
+  __onArray: { articles: 'append' }
 }));
 ```
 
@@ -284,7 +284,7 @@ function transformArticle(article) {
           __delete: article.__delete
         }
       ],
-      __onReplace: { articles: 'append' }
+      __onArray: { articles: 'append' }
     }),
     publishDate: Temporal.PlainDateTime.from
   });
@@ -306,7 +306,7 @@ deleteArticleMutation.setTransformer(({ article }) => ({
   id: article.authorId,
   __typename: 'Author',
   articles: [{ ...article, __unlink__: true }],
-  __onReplace: { articles: 'append' }
+  __onArray: { articles: 'append' }
 }));
 ```
 

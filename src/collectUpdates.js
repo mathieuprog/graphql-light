@@ -49,17 +49,17 @@ function hookOnCompareObjects(a, b) {
 }
 
 function hookOnCompareObjectProps(object, propName, propValueA, propValueB) {
-  if (isArrayOfEntities(propValueA) || isArrayOfEntities(propValueB) || object['__onReplace']?.[propName]) {
-    const onReplace = object['__onReplace'];
-    if (onReplace?.[propName] && !['override', 'append'].includes(onReplace[propName])) {
-      throw new Error(`no or invalid \`__onReplace\` option for property \`${propName}\``);
+  if (isArrayOfEntities(propValueA) || isArrayOfEntities(propValueB) || object['__onArray']?.[propName]) {
+    const onArray = object['__onArray'];
+    if (onArray?.[propName] && !['override', 'append'].includes(onArray[propName])) {
+      throw new Error(`no or invalid \`__onArray\` option for property \`${propName}\``);
     }
-    const append = !!onReplace?.[propName] && onReplace[propName] === 'append';
+    const append = !!onArray?.[propName] && onArray[propName] === 'append';
 
     const hooks = {
       onCompareArrays: getHookOnCompareArrays(append)
     };
-    if (!areArraysEqual(value, b[key], { hooks, ignoreProps: ['__unlink', '__delete', '__onReplace'] })) {
+    if (!areArraysEqual(value, b[key], { hooks, ignoreProps: ['__unlink', '__delete', '__onArray'] })) {
       return { ne: true };
     }
 
@@ -129,7 +129,7 @@ function doCollectUpdates(getCachedEntityById, elements, updates, updatesToListe
       }
 
       for (let [propName, propValue] of Object.entries(entity)) {
-        if (['__unlink', '__delete', '__onReplace', 'id', '__typename'].includes(propName)) {
+        if (['__unlink', '__delete', '__onArray', 'id', '__typename'].includes(propName)) {
           continue;
         }
 
@@ -158,7 +158,7 @@ function doCollectUpdates(getCachedEntityById, elements, updates, updatesToListe
               onCompareObjects: hookOnCompareObjects,
               onCompareObjectProps: hookOnCompareObjectProps
             };
-            if (!areObjectsEqual(cachedEntity[propName], propValue, { hooks, ignoreProps: ['__unlink', '__delete', '__onReplace'] })) {
+            if (!areObjectsEqual(cachedEntity[propName], propValue, { hooks, ignoreProps: ['__unlink', '__delete', '__onArray'] })) {
               updates.push({ type: UpdateType.UPDATE_PROP, entity, propName });
             }
           }
@@ -167,13 +167,13 @@ function doCollectUpdates(getCachedEntityById, elements, updates, updatesToListe
           continue;
         }
 
-        if (isArrayOfEntities(propValue) || (propValue.length === 0 && entity['__onReplace']?.[propName])) {
+        if (isArrayOfEntities(propValue) || (propValue.length === 0 && entity['__onArray']?.[propName])) {
           if (isCachedProp) {
-            const onReplace = entity['__onReplace'];
-            if (onReplace?.[propName] && !['override', 'append'].includes(onReplace[propName])) {
-              throw new Error(`no or invalid \`__onReplace\` option for property \`${propName}\``);
+            const onArray = entity['__onArray'];
+            if (onArray?.[propName] && !['override', 'append'].includes(onArray[propName])) {
+              throw new Error(`no or invalid \`__onArray\` option for property \`${propName}\``);
             }
-            const append = !!onReplace?.[propName] && onReplace[propName] === 'append';
+            const append = !!onArray?.[propName] && onArray[propName] === 'append';
 
             const hookOnCompareArrays = getHookOnCompareArrays(append);
 
@@ -182,7 +182,7 @@ function doCollectUpdates(getCachedEntityById, elements, updates, updatesToListe
               onCompareObjects: hookOnCompareObjects,
               onCompareObjectProps: hookOnCompareObjectProps
             };
-            if (!areArraysEqual(cachedEntity[propName], propValue, { hooks, ignoreProps: ['__unlink', '__delete', '__onReplace'] })) {
+            if (!areArraysEqual(cachedEntity[propName], propValue, { hooks, ignoreProps: ['__unlink', '__delete', '__onArray'] })) {
               updates.push({ type: UpdateType.UPDATE_PROP, entity, propName });
             }
           }
@@ -199,7 +199,7 @@ function doCollectUpdates(getCachedEntityById, elements, updates, updatesToListe
               onCompareObjects: hookOnCompareObjects,
               onCompareObjectProps: hookOnCompareObjectProps
             };
-            if (!areArraysEqual(cachedEntity[propName], propValue, { hooks, ignoreProps: ['__unlink', '__delete', '__onReplace'] })) {
+            if (!areArraysEqual(cachedEntity[propName], propValue, { hooks, ignoreProps: ['__unlink', '__delete', '__onArray'] })) {
               updates.push({ type: UpdateType.UPDATE_PROP, entity, propName });
             }
           }

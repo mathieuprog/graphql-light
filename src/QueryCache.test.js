@@ -10,7 +10,7 @@ const denormalizedData = {
   test: [[1, 2]],
   articles: [{ foo: [
     {
-      __onReplace: { articles: 'append' },
+      __onArray: { articles: 'append' },
       articles: [
         {
           id: 'article1',
@@ -28,7 +28,7 @@ const denormalizedData = {
               label: 'foobar'
             },
           ],
-          __onReplace: { tags: 'override' },
+          __onArray: { tags: 'override' },
         },
         {
           id: 'article2',
@@ -46,7 +46,7 @@ const denormalizedData = {
               label: 'foobar'
             },
           ],
-          __onReplace: { tags: 'override' },
+          __onArray: { tags: 'override' },
         }
       ]
     }
@@ -70,7 +70,7 @@ const denormalizedData = {
           number: '20'
         }
       ],
-      __onReplace: { phones: 'append' }
+      __onArray: { phones: 'append' }
     }
   }
 };
@@ -142,7 +142,7 @@ test('applyUpdate', () => {
               number: '20'
             }
           ],
-          __onReplace: { phones: 'append' }
+          __onArray: { phones: 'append' }
         }
       }
     });
@@ -244,7 +244,7 @@ test('refresh', () => {
               number: '20'
             }
           ],
-          __onReplace: { phones: 'append' }
+          __onArray: { phones: 'append' }
         }
       }
     });

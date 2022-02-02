@@ -153,14 +153,14 @@ test('normalize and store', () => {
         title: 'Another article',
       }
     ],
-    __onReplace: { articles: 'append' },
+    __onArray: { articles: 'append' },
     contacts: {
       dummy: {
         address: address2,
         phones: [
           phone3
         ],
-        __onReplace: { phones: 'append' }
+        __onArray: { phones: 'append' }
       }
     },
     otherContacts: [[ // just testing nested arrays
@@ -169,14 +169,14 @@ test('normalize and store', () => {
         phones: [
           phone3
         ],
-        __onReplace: { phones: 'override' }
+        __onArray: { phones: 'override' }
       },
       {
         address: address1,
         phones: [
           phone3
         ],
-        __onReplace: { phones: 'append' }
+        __onArray: { phones: 'append' }
       }
     ]],
     objectLiteral: {
@@ -210,7 +210,7 @@ test('nested entities', () => {
           __typename: 'Comment'
         }
       ],
-      __onReplace: { comments: 'append' }
+      __onArray: { comments: 'append' }
     }
   };
 

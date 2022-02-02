@@ -23,7 +23,7 @@ const denormalizedData = deepFreeze({
           label: 'foobar'
         },
       ],
-      __onReplace: { tags: 'override' },
+      __onArray: { tags: 'override' },
     },
     {
       id: 'article2',
@@ -41,10 +41,10 @@ const denormalizedData = deepFreeze({
           label: 'foobar'
         },
       ],
-      __onReplace: { tags: 'override' },
+      __onArray: { tags: 'override' },
     }
   ]],
-  __onReplace: { articles: 'append' },
+  __onArray: { articles: 'append' },
   contacts: {
     dummy: {
       address: {
@@ -64,7 +64,7 @@ const denormalizedData = deepFreeze({
           number: '20'
         }
       ],
-      __onReplace: { phones: 'append' }
+      __onArray: { phones: 'append' }
     }
   }
 });

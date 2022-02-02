@@ -35,13 +35,13 @@ function doCleanDenormalized(object) {
         doCleanDenormalized(propValue);
       }
     } else if (isArray(propValue)) {
-      delete object.__onReplace;
+      delete object.__onArray;
       object[propName] = propValue.filter(e => !e.__delete && !e.__unlink);
       processArrayRecursively(object[propName]);
     }
   }
 
-  if (['__delete', '__unlink', '__onReplace'].some(meta => object.hasOwnProperty(meta))) {
+  if (['__delete', '__unlink', '__onArray'].some(meta => object.hasOwnProperty(meta))) {
     throw new Error(`unexpected meta prop on object: ${JSON.stringify(object)}`);
   }
 }
