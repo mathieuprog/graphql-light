@@ -17,12 +17,12 @@
   * [Delete entities](#delete-entities)
   * [Handling arrays](#handling-arrays)
   * [Customize query behavior on cache updates](#customize-query-behavior-on-cache-updates)
+* [Errors](#errors)
 * [Advanced features](#advanced-features)
   * [Query caching strategies](#query-caching-strategies)
   * [Derived queries](#derived-queries)
   * [Fetching strategies](#fetching-strategies)
   * [Simple network requests](#simple-network-requests)
-  * [Errors](#errors)
   * [Inspecting the cache](#inspecting-the-cache)
 * [Installation](#installation)
 
@@ -335,6 +335,31 @@ query.setOnStoreUpdate((update, variables, match) => {
 
 Possible update types are  `CREATE_ENTITY`, `DELETE_ENTITY` and `UPDATE_PROP`.
 
+## Errors
+
+`GraphQLError` is a custom error type that is thrown when the server returns GraphQL errors. It holds a `graphQLErrors` property that contains the list of errors.
+
+In some cases you might want to catch such errors, for example when handling authentication errors:
+
+```javascript
+import { GraphQLError } from 'graphql-light';
+
+someQuery.catch(error => {
+  if (error instanceof GraphQLError) {
+    const isUnauthenticated = error.graphQLErrors.some(error => {
+      return error.extensions.code === 'unauthenticated';
+    });
+
+    if (isUnauthenticated) {
+      // do something
+      return;
+    }
+  }
+
+  throw error;
+});
+```
+
 ## Advanced features
 
 ### Query caching strategies
@@ -473,31 +498,6 @@ import { NetworkRequest } from 'graphql-light';
 import client from './client';
 
 const promise = new NetworkRequest(client, `...`).execute(variables);
-```
-
-### Errors
-
-`GraphQLError` is a custom error type that is thrown when the server returns GraphQL errors. It holds a `graphQLErrors` property that contains the list of errors.
-
-In some cases you might want to catch such errors, for example when handling authentication errors:
-
-```javascript
-import { GraphQLError } from 'graphql-light';
-
-someQuery.catch(error => {
-  if (error instanceof GraphQLError) {
-    const isUnauthenticated = error.graphQLErrors.some(error => {
-      return error.extensions.code === 'unauthenticated';
-    });
-
-    if (isUnauthenticated) {
-      // do something
-      return;
-    }
-  }
-
-  throw error;
-});
 ```
 
 ### Inspecting the cache
