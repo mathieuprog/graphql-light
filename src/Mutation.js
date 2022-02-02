@@ -2,7 +2,7 @@ import store from './store';
 
 export default class Mutation {
   // transformer: function transforming data before storage
-  constructor(client, queryDocument, transformer) {
+  constructor(client, queryDocument) {
     this.client = client;
     this.queryDocument = queryDocument;
     this.transformer = data => data;
