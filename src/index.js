@@ -8,6 +8,7 @@ import NotFoundInCacheError from './NotFoundInCacheError';
 import Query from './Query';
 import store from './store';
 import transform from './transform';
+import UpdateType from './UpdateType';
 
 export {
   Client,
@@ -19,5 +20,6 @@ export {
   NotFoundInCacheError,
   Query,
   store,
-  transform
+  transform,
+  UpdateType
 }
