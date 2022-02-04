@@ -1,6 +1,8 @@
 import { isArray, isEntity, isObjectLiteral } from './utils';
 
 export default function cleanDenormalized(data) {
+  data = removeWrapperObject(data);
+
   if (isObjectLiteral(data)) {
     if (data.__delete) {
       return null;
@@ -17,6 +19,15 @@ export default function cleanDenormalized(data) {
 
     return data.array;
   }
+}
+
+function removeWrapperObject(data) {
+  if (isObjectLiteral(data) && !isEntity(data) && Object.keys(data).length === 1) {
+    const [key] = Object.keys(data);
+    return removeWrapperObject(data[key]);
+  }
+
+  return data;
 }
 
 function doCleanDenormalized(object) {
