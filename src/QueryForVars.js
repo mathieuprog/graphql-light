@@ -123,7 +123,9 @@ export default class QueryForVars extends AbstractQueryForVars {
   subscribeToStore() {
     const unsubscriber = store.subscribe(updates => {
       const onStoreUpdate = update => this.query.onStoreUpdate(update, this.variables, isObjectSubset);
-      const isUpdate = update => this.updatesToListenTo.some(u => isObjectSubset(update, u));
+      const isUpdate = update => this.updatesToListenTo.some(u => {
+        return update.entity.id === u.entity.id && isObjectSubset(update, u)
+      });
 
       this.strategy.processUpdates(updates, onStoreUpdate, isUpdate, this.notifySubscribers.bind(this));
     });
