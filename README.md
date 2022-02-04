@@ -387,6 +387,8 @@ When using the user resolver strategy, the `onStoreUpdate` function should retur
 The caching behavior can further be customized through the `setOnUnobservedStrategy` function:
 
 ```javascript
+import { OnUnobservedStrategy } from 'graphql-light';
+
 query.setOnUnobservedStrategy(_variables => {
   return OnUnobservedStrategy.KEEP_UPDATING;
 });
