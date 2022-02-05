@@ -9,6 +9,6 @@ export default class NetworkRequest {
       throw new Error('invalid argument: variables');
     }
 
-    return await this.client.request(this.queryDocument, this.variables);
+    return await this.client.request(this.queryDocument, variables);
   }
 }
