@@ -167,7 +167,7 @@ function doCollectUpdates(getCachedEntityById, elements, updates, updatesToListe
           continue;
         }
 
-        if (isArrayOfEntities(propValue) || (propValue.length === 0 && entity['__onArray']?.[propName])) {
+        if (isArrayOfEntities(propValue) || (isArray(propValue) && propValue.length === 0 && entity['__onArray']?.[propName])) {
           if (isCachedProp) {
             const onArray = entity['__onArray'];
             if (onArray?.[propName] && !['override', 'append'].includes(onArray[propName])) {
