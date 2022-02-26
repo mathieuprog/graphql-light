@@ -29,7 +29,7 @@ export default class QueryCacheStrategy extends AbstractQueryResolverStrategy {
   static removeWrapperObject(data) {
     if (isObjectLiteral(data) && !isEntity(data) && Object.keys(data).length === 1) {
       const [key] = Object.keys(data);
-      return removeWrapperObject(data[key]);
+      return QueryCacheStrategy.removeWrapperObject(data[key]);
     }
 
     return data;
