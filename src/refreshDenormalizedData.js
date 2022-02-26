@@ -18,7 +18,7 @@ export default function refreshDenormalizedData(entities, denormalizedData) {
   return { denormalizedData, updatesToListenTo };
 }
 
-function doRefresh(entities, data, updatesToListenTo, getDataFromStore = null) {
+function doRefresh(entities, data, updatesToListenTo, nestedEntity = false, getDataFromStore = null) {
   if (isNullOrUndefined(data)) {
     return null;
   }
@@ -29,20 +29,19 @@ function doRefresh(entities, data, updatesToListenTo, getDataFromStore = null) {
     const isEntity_ = isEntity(object);
 
     if (isEntity_) {
-      const cachedEntity =
-        (getDataFromStore !== null)
-          ? getDataFromStore() // nested entity
-          : entities[object.id];
+      // nested entity, it might have changed ID
+      const cachedEntity = (nestedEntity) ? getDataFromStore() : entities[object.id];
 
       if (!cachedEntity) {
         return null;
       }
 
       getDataFromStore = () => cachedEntity;
+      nestedEntity = true;
     }
 
     for (let [propName, propValue] of Object.entries(object)) {
-      object[propName] = doRefresh(entities, propValue, updatesToListenTo, () => getDataFromStore?.()[propName]);
+      object[propName] = doRefresh(entities, propValue, updatesToListenTo, nestedEntity, () => getDataFromStore?.()[propName]);
     }
 
     if (isEntity_) {
@@ -62,9 +61,9 @@ function doRefresh(entities, data, updatesToListenTo, getDataFromStore = null) {
   if (isArray(data)) {
     let array = data;
 
-    if (getDataFromStore === null) {
+    if (!nestedEntity) {
       if (isArrayOfEntities(array)) {
-        return array.map(entity => doRefresh(entities, entity, updatesToListenTo, () => entities[entity.id]));
+        return array.map(entity => doRefresh(entities, entity, updatesToListenTo));
       }
 
       return array.map(element => doRefresh(entities, element, updatesToListenTo));
@@ -74,9 +73,9 @@ function doRefresh(entities, data, updatesToListenTo, getDataFromStore = null) {
     if (isArrayOfEntities(array)) {
       return array
         .filter(entity => getDataFromStore().some(cachedEntity => cachedEntity.id === entity.id))
-        .map(entity => doRefresh(entities, entity, updatesToListenTo, () => getDataFromStore().find(cachedEntity => cachedEntity.id === entity.id)));
+        .map(entity => doRefresh(entities, entity, updatesToListenTo, true, () => getDataFromStore().find(cachedEntity => cachedEntity.id === entity.id)));
     } else {
-      return array.map((element, i) => doRefresh(entities, element, updatesToListenTo, () => getDataFromStore()?.[i]));
+      return array.map((element, i) => doRefresh(entities, element, updatesToListenTo, true, () => getDataFromStore()?.[i]));
     }
   }
 
