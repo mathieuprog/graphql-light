@@ -14,7 +14,7 @@
   * [Mutate data](#mutate-data)
 * [Manage the cache](#manage-the-cache)
   * [Transform entities](#transform-entities)
-  * [Delete entities](#delete-entities)
+  * [Delete and update entities](#delete-and-update-entities)
   * [Handling arrays](#handling-arrays)
   * [Customize query behavior on cache updates](#customize-query-behavior-on-cache-updates)
 * [Errors](#errors)
@@ -228,86 +228,43 @@ function transformArticle(article) {
 
 The global transformers work with a convention, where the function name is prefixed by "transform" followed by the object's typename we want to transform. So in order to transform objects of type "Article", we create a function named `transformArticle`.
 
-### Delete entities
+### Delete and update entities
 
-Deleting entities from the cache is done by adding a flag `__delete` to the data:
+Deleting and updating entities from the cache is done by passing a callback function to `setOnFetchEntity` of the query instance:
 
 ```javascript
-import { Mutation } from 'graphql-light';
-import client from './client';
+import { removeEntityById } from 'graphql-light';
 
-const deleteArticleMutation = new Mutation(client, `...`);
-
-deleteArticleMutation.setTransformer(({ article }) => {
-  return { ...article, __delete: true };
+query.setOnFetchEntity(normalizedEntity => {
+  if (normalizedEntity.__typename === 'Article') {
+    return removeEntityById(normalizedEntity.id);
+  }
 });
+```
 
-export default deleteArticleMutation;
+3 functions are available to mark an entity as to be deleted or updated:
+* `updateEntity`
+* `removeEntity`
+* `removeEntityById`
+
+`updateEntity` is especially useful if we need to add or remove elements from arrays:
+
+```javascript
+updateEntity(normalizedEntity, 'articles', articles =>
+  articles.filter(({ id }) => id !== 'article1' && id !== 'article2'));
 ```
 
 ### Handling arrays
 
-When entities are added or removed, we might need to add them into arrays or remove from arrays.
-
-In the example above, we removed an article from the cache. However, if we stored the author with its list of articles, we must also instruct the cache to remove the article from the articles list in author.
-
-To do so, instead of returning the article, we can return the author with its updated collection of articles:
+When arrays are returned from the server, we need to know whether we want to append or override the array in the cache.
 
 ```javascript
-deleteArticleMutation.setTransformer(({ article }) => ({
-  id: article.authorId,
-  __typename: 'Author',
-  articles: [{ ...article, __delete: true }],
-  __onArray: { articles: 'append' }
-}));
-```
-
-We add the article to delete into the author's `articles` list, and we specify that the given array is to be appended. If we want to override an array, we can specify `'override'` instead of `'append'`.
-
-We can also do this work in the global transformer `transformArticle` that we wrote above:
-
-```javascript
-function transformArticle(article) {
-  if ('authorId' in article) {
-    article.author = article.authorId;
-    delete article.authorId;
+query.onFetchArrayOfEntities((propName, _object) => {
+  switch (propName) {
+    case 'articles':
+      return 'append';
   }
-
-  return transform(article, {
-    author: authorId => ({
-      id: authorId,
-      __typename: 'Author',
-      articles: [
-        {
-          id: article.id,
-          __typename: 'Article',
-          __delete: article.__delete
-        }
-      ],
-      __onArray: { articles: 'append' }
-    }),
-    publishDate: Temporal.PlainDateTime.from
-  });
-}
-```
-
-In this case, we can just return the article in the transformer of the mutation:
-
-```javascript
-deleteArticleMutation.setTransformer(({ article }) => {
-  return { ...article, __delete: true };
-});
-```
-
-If we want to remove an element from an array without deleting it, we can use the flag `__unlink` instead:
-
-```javascript
-deleteArticleMutation.setTransformer(({ article }) => ({
-  id: article.authorId,
-  __typename: 'Author',
-  articles: [{ ...article, __unlink__: true }],
-  __onArray: { articles: 'append' }
-}));
+};
 ```
 
 ### Customize query behavior on cache updates

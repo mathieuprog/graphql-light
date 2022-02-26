@@ -9,7 +9,7 @@ const denormalizedData = deepFreeze({
   id: 'person1',
   __typename: 'Person',
   name: 'Mathieu',
-  articles: [[ // just testing nested arrays
+  articles: [
     {
       id: 'article1',
       __typename: 'Article',
@@ -25,8 +25,7 @@ const denormalizedData = deepFreeze({
           __typename: 'Tag',
           label: 'foobar'
         },
-      ],
-      __onArray: { tags: 'override' },
+      ]
     },
     {
       id: 'article2',
@@ -43,11 +42,9 @@ const denormalizedData = deepFreeze({
           __typename: 'Tag',
           label: 'foobar'
         },
-      ],
-      __onArray: { tags: 'override' },
+      ]
     }
-  ]],
-  __onArray: { articles: 'append' },
+  ],
   contacts: {
     dummy: {
       address: {
@@ -66,20 +63,31 @@ const denormalizedData = deepFreeze({
           __typename: 'Phone',
           number: '20'
         }
-      ],
-      __onArray: { phones: 'append' }
+      ]
     }
   }
 });
 
 beforeEach(() => {
-  store.subscribers = new Set();
-  store.initialize({});
+  store.initialize();
+
+  const onFetchArrayOfEntities = (propName, object) => {
+    switch (propName) {
+      case 'articles':
+        return 'append';
+
+      case 'tags':
+        return 'override';
+
+      case 'phones':
+        return (object.address.id === 'address2') ? 'override' : 'append';
+    }
+  };
+
+  store.store(denormalizedData, { onFetchArrayOfEntities });
 });
 
 test('DerivedQuery', async () => {
-  store.store(denormalizedData);
-
   const globalSubscriber = jest.fn();
   store.subscribe(globalSubscriber);
 
@@ -175,8 +183,6 @@ test('DerivedQuery', async () => {
 });
 
 test('DerivedQuery with queries using query cache', async () => {
-  store.store(denormalizedData);
-
   const globalSubscriber = jest.fn();
   store.subscribe(globalSubscriber);
 
@@ -262,8 +268,6 @@ test('DerivedQuery with queries using query cache', async () => {
 });
 
 test('DerivedQuery with setOnQueryUpdate', async () => {
-  store.store(denormalizedData);
-
   const client = {
     request(_queryDocument, _variables) {
       return [
@@ -326,8 +330,6 @@ test('DerivedQuery with setOnQueryUpdate', async () => {
 });
 
 test('unsubscribe', async () => {
-  store.store(denormalizedData);
-
   const unsubscriber = jest.fn();
   const getUnsubscriber = jest.fn();
 

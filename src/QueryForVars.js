@@ -148,11 +148,18 @@ export default class QueryForVars extends AbstractQueryForVars {
 
   async fetchData() {
     const data = await this.executePromiseOrWaitPending();
+
     return this.query.transformer(data, this.variables);
   }
 
   cacheData(data) {
-    const { updatesToListenTo, denormalizedData } = store.store(data);
+    const onFetchEntity =
+      (entity) => this.query.onFetchEntity(entity, this.variables, data);
+
+    const onFetchArrayOfEntities =
+      (propName, object) => this.query.setOnFetchArrayOfEntities(propName, object, this.variables, data);
+
+    const { updatesToListenTo, denormalizedData } = store.store(data, { onFetchEntity, onFetchArrayOfEntities });
     this.updatesToListenTo = updatesToListenTo;
 
     this.strategy.setFetchedData(denormalizedData);

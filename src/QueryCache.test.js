@@ -1,5 +1,4 @@
 import QueryCache from './QueryCache';
-import cleanDenormalized from './cleanDenormalized';
 import { isObjectSubset } from './utils';
 import { deleteNestedProp, setNestedProp } from 'dynamic-props-immutable';
 
@@ -8,9 +7,8 @@ const denormalizedData = {
   __typename: 'Person',
   name: 'Mathieu',
   test: [[1, 2]],
-  articles: [{ foo: [
+  list: [{ foo: [
     {
-      __onArray: { articles: 'append' },
       articles: [
         {
           id: 'article1',
@@ -27,8 +25,7 @@ const denormalizedData = {
               __typename: 'Tag',
               label: 'foobar'
             },
-          ],
-          __onArray: { tags: 'override' },
+          ]
         },
         {
           id: 'article2',
@@ -45,8 +42,7 @@ const denormalizedData = {
               __typename: 'Tag',
               label: 'foobar'
             },
-          ],
-          __onArray: { tags: 'override' },
+          ]
         }
       ]
     }
@@ -69,28 +65,35 @@ const denormalizedData = {
           __typename: 'Phone',
           number: '20'
         }
-      ],
-      __onArray: { phones: 'append' }
+      ]
     }
   }
 };
 
+const onFetchArrayOfEntities = (propName, object) => {
+  switch (propName) {
+    case 'articles':
+      return 'append';
+
+    case 'tags':
+      return 'override';
+
+    case 'phones':
+      return (object.address.id === 'address2') ? 'override' : 'append';
+  }
+};
+
 beforeEach(() => {
-  store.subscribers = new Set();
-  store.initialize({});
+  store.initialize();
+  store.store(denormalizedData, { onFetchArrayOfEntities });
 });
 
 test('applyUpdate', () => {
-  store.store(denormalizedData);
-
-  let data =
-    cleanDenormalized({
-      id: 'article1',
-      __typename: 'Article',
-      title: 'Foo'
-    });
-
-  let queryCache = new QueryCache(data);
+  let queryCache = new QueryCache({
+    id: 'article1',
+    __typename: 'Article',
+    title: 'Foo'
+  });
 
   let update = { type: 'UPDATE_PROP', entity: { id: 'article1', title: 'Foo' }, propName: 'title' };
 
@@ -118,36 +121,32 @@ test('applyUpdate', () => {
 
   expect(queryCache.get()).toBeNull();
 
-  data =
-    cleanDenormalized({
-      id: 'person1',
-      __typename: 'Person',
-      name: 'Mathieu',
-      contacts: {
-        dummy: {
-          address: {
-            id: 'address1',
-            __typename: 'Address',
-            street: 'Foo street'
+  queryCache = new QueryCache({
+    id: 'person1',
+    __typename: 'Person',
+    name: 'Mathieu',
+    contacts: {
+      dummy: {
+        address: {
+          id: 'address1',
+          __typename: 'Address',
+          street: 'Foo street'
+        },
+        phones: [
+          {
+            id: 'phone1',
+            __typename: 'Phone',
+            number: '10'
           },
-          phones: [
-            {
-              id: 'phone1',
-              __typename: 'Phone',
-              number: '10'
-            },
-            {
-              id: 'phone2',
-              __typename: 'Phone',
-              number: '20'
-            }
-          ],
-          __onArray: { phones: 'append' }
-        }
+          {
+            id: 'phone2',
+            __typename: 'Phone',
+            number: '20'
+          }
+        ]
       }
-    });
-
-  queryCache = new QueryCache(data);
+    }
+  });
 
   update = { type: 'UPDATE_PROP', entity: { id: 'phone1', number: '11' }, propName: 'number' };
 
@@ -167,16 +166,11 @@ test('applyUpdate', () => {
 });
 
 test('refresh', () => {
-  store.store(denormalizedData);
-
-  let data =
-    cleanDenormalized({
-      id: 'article1',
-      __typename: 'Article',
-      title: 'Foo'
-    });
-
-  let queryCache = new QueryCache(data);
+  let queryCache = new QueryCache({
+    id: 'article1',
+    __typename: 'Article',
+    title: 'Foo'
+  });
 
   expect(queryCache.get()).toEqual({
     id: 'article1',
@@ -192,10 +186,10 @@ test('refresh', () => {
     title: 'Foo'
   });
 
-  let updatedDenormalizedData = setNestedProp`articles[${0}].foo[${0}].articles[${0}].title`(denormalizedData, 'Foobar');
+  let updatedDenormalizedData = setNestedProp`list[${0}].foo[${0}].articles[${0}].title`(denormalizedData, 'Foobar');
 
-  store.initialize({});
-  store.store(updatedDenormalizedData);
+  store.initialize();
+  store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
 
   expect(queryCache.get()).toEqual({
     id: 'article1',
@@ -211,45 +205,42 @@ test('refresh', () => {
     title: 'Foobar'
   });
 
-  updatedDenormalizedData = deleteNestedProp`articles[${0}].foo[${0}].articles[${0}]`(denormalizedData, { resizeArray: true });
+  updatedDenormalizedData = deleteNestedProp`list[${0}].foo[${0}].articles[${0}]`(denormalizedData, { resizeArray: true });
 
-  store.initialize({});
-  store.store(updatedDenormalizedData);
+  store.initialize();
+  store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
 
   queryCache.refresh();
 
   expect(queryCache.get()).toBeNull();
 
-  data =
-    cleanDenormalized({
-      id: 'person1',
-      __typename: 'Person',
-      name: 'Mathieu',
-      contacts: {
-        dummy: {
-          address: {
-            id: 'address1',
-            __typename: 'Address',
-            street: 'Foo street'
+  queryCache = new QueryCache({
+    id: 'person1',
+    __typename: 'Person',
+    name: 'Mathieu',
+    contacts: {
+      dummy: {
+        address: {
+          id: 'address1',
+          __typename: 'Address',
+          street: 'Foo street'
+        },
+        phones: [
+          {
+            id: 'phone1',
+            __typename: 'Phone',
+            number: '10'
           },
-          phones: [
-            {
-              id: 'phone1',
-              __typename: 'Phone',
-              number: '10'
-            },
-            {
-              id: 'phone2',
-              __typename: 'Phone',
-              number: '20'
-            }
-          ],
-          __onArray: { phones: 'append' }
-        }
+          {
+            id: 'phone2',
+            __typename: 'Phone',
+            number: '20'
+          }
+        ],
+        // __onArray: { phones: 'append' }
       }
-    });
-
-  queryCache = new QueryCache(data);
+    }
+  });
 
   expect(isObjectSubset(queryCache.get(), {
     contacts: { dummy: { address: { id: 'address1' } } }
@@ -258,8 +249,8 @@ test('refresh', () => {
   updatedDenormalizedData = setNestedProp`contacts.dummy.address.id`(denormalizedData, 'address10');
   updatedDenormalizedData = setNestedProp`contacts.dummy.address.street`(updatedDenormalizedData, 'Some street');
 
-  store.initialize({});
-  store.store(updatedDenormalizedData);
+  store.initialize();
+  store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
 
   queryCache.refresh();
 
@@ -277,8 +268,8 @@ test('refresh', () => {
   updatedDenormalizedData = setNestedProp`contacts.dummy.phones[${0}].id`(denormalizedData, 'phone10');
   updatedDenormalizedData = setNestedProp`contacts.dummy.phones[${0}].number`(updatedDenormalizedData, '42');
 
-  store.initialize({});
-  store.store(updatedDenormalizedData);
+  store.initialize();
+  store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
 
   queryCache.refresh();
 
@@ -290,8 +281,8 @@ test('refresh', () => {
 
   updatedDenormalizedData = deleteNestedProp`contacts.dummy.phones[${0}]`(denormalizedData, { resizeArray: true });
 
-  store.initialize({});
-  store.store(updatedDenormalizedData);
+  store.initialize();
+  store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
 
   queryCache.refresh();
 

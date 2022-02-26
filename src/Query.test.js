@@ -4,12 +4,13 @@ import FetchStrategy from './FetchStrategy';
 import { deepFreeze } from './utils';
 import { jest } from '@jest/globals';
 import { Temporal } from '@js-temporal/polyfill';
+import { removeEntityById } from './normalizeAndStore';
 
 const denormalizedData = deepFreeze({
   id: 'person1',
   __typename: 'Person',
   name: 'Mathieu',
-  articles: [[ // just testing nested arrays
+  articles: [
     {
       id: 'article1',
       __typename: 'Article',
@@ -26,7 +27,6 @@ const denormalizedData = deepFreeze({
           label: 'foobar'
         },
       ],
-      __onArray: { tags: 'override' },
     },
     {
       id: 'article2',
@@ -44,10 +44,8 @@ const denormalizedData = deepFreeze({
           label: 'foobar'
         },
       ],
-      __onArray: { tags: 'override' },
     }
-  ]],
-  __onArray: { articles: 'append' },
+  ],
   contacts: {
     dummy: {
       address: {
@@ -66,20 +64,31 @@ const denormalizedData = deepFreeze({
           __typename: 'Phone',
           number: '20'
         }
-      ],
-      __onArray: { phones: 'append' }
+      ]
     }
   }
 });
 
 beforeEach(() => {
-  store.subscribers = new Set();
-  store.initialize({});
+  store.initialize();
+
+  const onFetchArrayOfEntities = (propName, object) => {
+    switch (propName) {
+      case 'articles':
+        return 'append';
+
+      case 'tags':
+        return 'override';
+
+      case 'phones':
+        return (object.address.id === 'address2') ? 'override' : 'append';
+    }
+  };
+
+  store.store(denormalizedData, { onFetchArrayOfEntities });
 });
 
 test('Query', async () => {
-  store.store(denormalizedData);
-
   const globalSubscriber = jest.fn();
   store.subscribe(globalSubscriber);
 
@@ -177,7 +186,7 @@ test('Query', async () => {
 
   const client6 = {
     request(_queryDocument, _variables) {
-      return { id: 'person2', __typename: 'Person', __delete: true };
+      return { id: 'person2', __typename: 'Person' };
     }
   }
 
@@ -189,6 +198,11 @@ test('Query', async () => {
   const query6 = new Query(client6, null);
   query6.setResolver(() => (resolver6(), 1));
   query6.setOnStoreUpdate(() => (onStoreUpdate6(), null));
+  query6.setOnFetchEntity(normalizedEntity => {
+    if (normalizedEntity.id === 'person2') {
+      return removeEntityById(normalizedEntity.id);
+    }
+  });
 
   data = query6.watch({}, updater6, unsubscriber6); // sixth watcher but on different query
 
@@ -231,8 +245,6 @@ test('Query', async () => {
 });
 
 test('unsubscribe then resubscribe', async () => {
-  store.store(denormalizedData);
-
   const client1 = {
     request(_queryDocument, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'John' };
@@ -266,8 +278,6 @@ test('unsubscribe then resubscribe', async () => {
 });
 
 test('unsubscribe', async () => {
-  store.store(denormalizedData);
-
   const unsubscriber = jest.fn();
   const getUnsubscriber = jest.fn();
 
@@ -290,8 +300,6 @@ test('unsubscribe', async () => {
 });
 
 test('clearWhenInactiveForDuration', async () => {
-  store.store(denormalizedData);
-
   const client = {
     request(_queryDocument, _variables) {
       return {};
@@ -321,8 +329,6 @@ test('clearWhenInactiveForDuration', async () => {
 });
 
 test('refreshAfterDuration', async () => {
-  store.store(denormalizedData);
-
   const executeRequest = jest.fn();
 
   const client = {

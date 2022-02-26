@@ -12,6 +12,8 @@ export default class Query extends AbstractQuery {
     this.client = client;
     this.queryDocument = queryDocument;
     this.transformer = data => data;
+    this.onFetchEntity = () => undefined;
+    this.onFetchArrayOfEntities = () => undefined;
     this.onStoreUpdate = () => undefined;
     this.queriesForVars = {};
     this.getOnUnobservedStrategy = _variables => OnUnobservedStrategy.PAUSE_UPDATING;
@@ -24,6 +26,14 @@ export default class Query extends AbstractQuery {
 
   setTransformer(transformer) {
     this.transformer = transformer;
+  }
+
+  setOnFetchEntity(onFetchEntity) {
+    this.onFetchEntity = onFetchEntity;
+  }
+
+  setOnFetchArrayOfEntities(onFetchArrayOfEntities) {
+    this.onFetchArrayOfEntities = onFetchArrayOfEntities;
   }
 
   setOnStoreUpdate(onStoreUpdate) {

@@ -8,9 +8,8 @@ const denormalizedData = deepFreeze({ // test immutability
   __typename: 'Person',
   name: 'Mathieu',
   test: [[1, 2]],
-  articles: [[{ foo: [[ // just testing nested arrays
+  list: [
     {
-      __onArray: { articles: 'append' },
       articles: [
         {
           id: 'article1',
@@ -27,8 +26,7 @@ const denormalizedData = deepFreeze({ // test immutability
               __typename: 'Tag',
               label: 'foobar'
             },
-          ],
-          __onArray: { tags: 'override' },
+          ]
         },
         {
           id: 'article2',
@@ -45,12 +43,11 @@ const denormalizedData = deepFreeze({ // test immutability
               __typename: 'Tag',
               label: 'foobar'
             },
-          ],
-          __onArray: { tags: 'override' },
+          ]
         }
       ]
     }
-  ]]}]],
+  ],
   contacts: {
     dummy: {
       address: {
@@ -69,16 +66,34 @@ const denormalizedData = deepFreeze({ // test immutability
           __typename: 'Phone',
           number: '20'
         }
-      ],
-      __onArray: { phones: 'append' }
+      ]
     }
   }
 });
 
 beforeEach(() => {
-  store.subscribers = new Set();
-  store.initialize({});
+  store.initialize();
 });
+
+
+const onFetchEntity = _normalizedEntity => {
+};
+
+const onFetchArrayOfEntities = (propName, _object) => {
+  switch (propName) {
+    case 'articles':
+      return 'append';
+
+    case 'comments':
+      return 'append';
+
+    case 'phones':
+      return 'append';
+
+    case 'tags':
+      return 'override';
+  }
+};
 
 test('transform before storing', () => {
   store.setConfig({
@@ -88,7 +103,7 @@ test('transform before storing', () => {
           number: Number
         })}});
 
-  store.store(denormalizedData);
+  store.store(denormalizedData, { onFetchEntity, onFetchArrayOfEntities });
 
   const entities = store.getEntities();
 
@@ -97,7 +112,7 @@ test('transform before storing', () => {
 });
 
 test('store', () => {
-  store.store(denormalizedData);
+  store.store(denormalizedData, { onFetchEntity, onFetchArrayOfEntities });
 
   expect(isArray(store.filterEntities({ id: 'person1' }).person1.test[0])).toBeTruthy();
 
@@ -107,17 +122,17 @@ test('store', () => {
 
   expect(subscriber).toHaveBeenCalledTimes(0);
 
-  store.store({ id: 'person2', __typename: 'Person', name: 'Jérôme' });
+  store.store({ id: 'person2', __typename: 'Person', name: 'Jérôme' }, { onFetchEntity, onFetchArrayOfEntities });
 
   expect(subscriber).toHaveBeenCalledTimes(1);
 
-  store.store({ id: 'person3', __typename: 'Person', name: 'John' });
+  store.store({ id: 'person3', __typename: 'Person', name: 'John' }, { onFetchEntity, onFetchArrayOfEntities });
 
   expect(subscriber).toHaveBeenCalledTimes(2);
 
   unsubscribe();
 
-  store.store({ id: 'person4', __typename: 'Person', name: 'James' });
+  store.store({ id: 'person4', __typename: 'Person', name: 'James' }, { onFetchEntity, onFetchArrayOfEntities });
 
   expect(subscriber).toHaveBeenCalledTimes(2);
 

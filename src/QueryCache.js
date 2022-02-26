@@ -1,4 +1,10 @@
-import { isArray, isArrayOfEntities, isEntity, isNullOrUndefined, isObjectLiteral } from './utils';
+import {
+  isArray,
+  isArrayOfEntities,
+  isEntity,
+  isNullOrUndefined,
+  isObjectLiteral
+} from './utils';
 import store from './store';
 
 export default class QueryCache {

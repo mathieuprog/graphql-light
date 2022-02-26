@@ -9,9 +9,8 @@ const denormalizedData = deepFreeze({
   __typename: 'Person',
   name: 'Mathieu',
   test: [[1, 2]],
-  articles: [[{ foo: [[
+  list: [[{ foo: [[
     {
-      __onArray: { articles: 'append' },
       articles: [
         {
           id: 'article1',
@@ -28,8 +27,7 @@ const denormalizedData = deepFreeze({
               __typename: 'Tag',
               label: 'foobar'
             },
-          ],
-          __onArray: { tags: 'override' },
+          ]
         },
         {
           id: 'article2',
@@ -46,8 +44,7 @@ const denormalizedData = deepFreeze({
               __typename: 'Tag',
               label: 'foobar'
             },
-          ],
-          __onArray: { tags: 'override' },
+          ]
         }
       ]
     }
@@ -70,21 +67,32 @@ const denormalizedData = deepFreeze({
           __typename: 'Phone',
           number: '20'
         }
-      ],
-      __onArray: { phones: 'append' }
+      ]
     }
   }
 });
 
 beforeEach(() => {
-  store.subscribers = new Set();
-  store.initialize({});
+  store.initialize();
+
+  const onFetchArrayOfEntities = (propName, object) => {
+    switch (propName) {
+      case 'articles':
+        return 'append';
+
+      case 'tags':
+        return 'override';
+
+      case 'phones':
+        return (object.address.id === 'address2') ? 'override' : 'append';
+    }
+  };
+
+  store.store(denormalizedData, { onFetchArrayOfEntities });
 });
 
 describe('user resolver', () => {
   test('onUnobservedStrategy KEEP_UPDATING', async () => {
-    store.store(denormalizedData);
-
     const client = {
       request(_queryDocument, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
@@ -116,8 +124,6 @@ describe('user resolver', () => {
   });
 
   test('onUnobservedStrategy PAUSE_UPDATING', async () => {
-    store.store(denormalizedData);
-
     const client = {
       request(_queryDocument, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
@@ -147,8 +153,6 @@ describe('user resolver', () => {
   });
 
   test('store updates', async () => {
-    store.store(denormalizedData);
-
     const client1 = {
       request(_queryDocument, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
@@ -188,8 +192,6 @@ describe('user resolver', () => {
   });
 
   test('store updates unrelated', async () => {
-    store.store(denormalizedData);
-
     const client1 = {
       request(_queryDocument, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
@@ -229,8 +231,6 @@ describe('user resolver', () => {
   });
 
   test('custom onStoreUpdate: prevent update', async () => {
-    store.store(denormalizedData);
-
     const client1 = {
       request(_queryDocument, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
@@ -275,8 +275,6 @@ describe('user resolver', () => {
   });
 
   test('custom onStoreUpdate: update', async () => {
-    store.store(denormalizedData);
-
     const client1 = {
       request(_queryDocument, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
@@ -321,8 +319,6 @@ describe('user resolver', () => {
   });
 
   test('custom onStoreUpdate: update unrelated', async () => {
-    store.store(denormalizedData);
-
     const client1 = {
       request(_queryDocument, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
@@ -369,8 +365,6 @@ describe('user resolver', () => {
 
 describe('query cache', () => {
   test('onUnobservedStrategy KEEP_UPDATING', async () => {
-    store.store(denormalizedData);
-
     const client = {
       request(_queryDocument, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
@@ -393,8 +387,6 @@ describe('query cache', () => {
   });
 
   test('onUnobservedStrategy PAUSE_UPDATING', async () => {
-    store.store(denormalizedData);
-
     const client = {
       request(_queryDocument, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
@@ -415,8 +407,6 @@ describe('query cache', () => {
   });
 
   test('store updates', async () => {
-    store.store(denormalizedData);
-
     const client1 = {
       request(_queryDocument, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
@@ -449,8 +439,6 @@ describe('query cache', () => {
   });
 
   test('store updates unrelated', async () => {
-    store.store(denormalizedData);
-
     const client1 = {
       request(_queryDocument, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
@@ -480,8 +468,6 @@ describe('query cache', () => {
   });
 
   test('custom onStoreUpdate: prevent update', async () => {
-    store.store(denormalizedData);
-
     const client1 = {
       request(_queryDocument, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
@@ -516,8 +502,6 @@ describe('query cache', () => {
   });
 
   test('custom onStoreUpdate: update', async () => {
-    store.store(denormalizedData);
-
     const client1 = {
       request(_queryDocument, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
@@ -555,8 +539,6 @@ describe('query cache', () => {
   });
 
   test('custom onStoreUpdate: update unrelated', async () => {
-    store.store(denormalizedData);
-
     const client1 = {
       request(_queryDocument, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };

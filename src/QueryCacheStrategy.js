@@ -1,6 +1,9 @@
 import AbstractQueryResolverStrategy from './AbstractQueryResolverStrategy';
 import QueryCache from './QueryCache';
-import cleanDenormalized from './cleanDenormalized';
+import {
+  isEntity,
+  isObjectLiteral
+} from './utils';
 
 export default class QueryCacheStrategy extends AbstractQueryResolverStrategy {
   constructor() {
@@ -23,8 +26,17 @@ export default class QueryCacheStrategy extends AbstractQueryResolverStrategy {
     return resolvedData;
   }
 
+  static removeWrapperObject(data) {
+    if (isObjectLiteral(data) && !isEntity(data) && Object.keys(data).length === 1) {
+      const [key] = Object.keys(data);
+      return removeWrapperObject(data[key]);
+    }
+
+    return data;
+  }
+
   setFetchedData(data) {
-    this.queryCache = new QueryCache(cleanDenormalized(data));
+    this.queryCache = new QueryCache(QueryCacheStrategy.removeWrapperObject(data));
     this.freshlyFetched = true;
   }
 

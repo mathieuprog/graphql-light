@@ -1,13 +1,20 @@
-import collectUpdates from './collectUpdates';
 import normalizeAndStore from './normalizeAndStore';
-import transformServerData from './transformServerData';
+import refreshDenormalizedData from './refreshDenormalizedData';
+import updateLinks from './updateLinks';
 import { isObjectSubset } from './utils';
 
 class Store {
-  entities = {};
-  initializedAt = new Date();
-  subscribers = new Set();
-  config = { transformers: {} };
+  constructor() {
+    this.initialize();
+  }
+
+  initialize() {
+    this.entities = {};
+    this.links = {};
+    this.initializedAt = new Date();
+    this.subscribers = new Set();
+    this.config = { transformers: {} };
+  }
 
   subscribe(subscriber) {
     const item = { subscriber };
@@ -25,22 +32,24 @@ class Store {
     }
   }
 
-  store(denormalizedData) {
-    denormalizedData = transformServerData(this.config.transformers, denormalizedData);
+  store(denormalizedData, callbacks = {}) {
+    let { entities, updates } = normalizeAndStore(this, denormalizedData, callbacks);
+    this.entities = entities;
 
-    const { updates, updatesToListenTo } = collectUpdates(this.getEntityById.bind(this), denormalizedData);
+    const { entities: entities_, links, updates: _updates } = updateLinks(entities, this.links, updates);
+    entities = entities_;
+    updates = _updates;
+    this.entities = entities;
+    this.links = links;
 
-    normalizeAndStore(this, denormalizedData);
+    const { denormalizedData: denormalizedData_, updatesToListenTo } = refreshDenormalizedData(this.entities, denormalizedData);
+    denormalizedData = denormalizedData_;
 
     if (updates.length > 0) {
       this.notifySubscribers(updates);
     }
 
-    return { updatesToListenTo, denormalizedData };
-  }
-
-  initialize(normalizedData) {
-    this.entities = normalizedData;
+    return { updatesToListenTo, updates, denormalizedData };
   }
 
   setConfig(newConfig) {

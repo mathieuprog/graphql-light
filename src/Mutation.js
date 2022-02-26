@@ -6,10 +6,20 @@ export default class Mutation {
     this.client = client;
     this.queryDocument = queryDocument;
     this.transformer = data => data;
+    this.onFetchEntity = () => undefined;
+    this.onFetchArrayOfEntities = () => undefined;
   }
 
   setTransformer(transformer) {
     this.transformer = transformer;
+  }
+
+  setOnFetchEntity(onFetchEntity) {
+    this.onFetchEntity = onFetchEntity;
+  }
+
+  setOnFetchArrayOfEntities(onFetchArrayOfEntities) {
+    this.onFetchArrayOfEntities = onFetchArrayOfEntities;
   }
 
   async mutate(variables, callback = _ => true) {
@@ -20,7 +30,12 @@ export default class Mutation {
     const transformedData = this.transformer(data, variables);
 
     if (transformedData) {
-      store.store(transformedData);
+      const onFetchEntity =
+        (entity) => this.onFetchEntity(entity, variables, data);
+      const onFetchArrayOfEntities =
+        (propName, object) => this.setOnFetchArrayOfEntities(propName, object, variables, data);
+
+      store.store(transformedData, { onFetchEntity, onFetchArrayOfEntities });
     }
 
     return data;
