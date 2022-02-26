@@ -259,7 +259,7 @@ updateEntity(normalizedEntity, 'articles', articles =>
 When arrays are returned from the server, we need to know whether we want to append or override the array in the cache.
 
 ```javascript
-query.onFetchArrayOfEntities((propName, _object) => {
+query.setOnFetchArrayOfEntities((propName, _object) => {
   switch (propName) {
     case 'articles':
       return 'append';
