@@ -3,7 +3,7 @@ import transform from './transform';
 import { deepFreeze, isArray } from './utils';
 import { jest } from '@jest/globals';
 
-const denormalizedData = deepFreeze({ // test immutability
+const denormalizedData = deepFreeze({ foo: { // test immutability
   id: 'person1',
   __typename: 'Person',
   name: 'Mathieu',
@@ -69,7 +69,7 @@ const denormalizedData = deepFreeze({ // test immutability
       ]
     }
   }
-});
+}});
 
 beforeEach(() => {
   store.initialize();

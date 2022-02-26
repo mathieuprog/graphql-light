@@ -42,7 +42,7 @@ function doRefresh(entities, data, updatesToListenTo, getDataFromStore = null) {
     }
 
     for (let [propName, propValue] of Object.entries(object)) {
-      object[propName] = doRefresh(entities, propValue, updatesToListenTo, () => getDataFromStore()?.[propName]);
+      object[propName] = doRefresh(entities, propValue, updatesToListenTo, () => getDataFromStore?.()[propName]);
     }
 
     if (isEntity_) {
