@@ -78,10 +78,6 @@ function doNormalizeAndStore(store, object, getObjectFromStore, callbacks, newEn
       let onFetchArray = callbacks?.onFetchArrayOfEntities?.(propName, object);
 
       if (isArrayOfEntities(array) || onFetchArray) {
-        if (!['append', 'override', 'remove'].includes(onFetchArray)) {
-          throw new Error(`specify whether elements in \`${propName}\` must be appended, removed or must override the existing cached array`);
-        }
-
         array.forEach(entity => {
           doNormalizeAndStore(store, entity, () => store.getEntityById(entity.id), callbacks, newEntities, updates);
         });
@@ -91,20 +87,26 @@ function doNormalizeAndStore(store, object, getObjectFromStore, callbacks, newEn
             ? array.map(entity => createProxy(entity, store.getEntityById.bind(store)))
             : array;
 
-        if (getObjectFromStore()?.[propName] && ['append', 'remove'].includes(onFetchArray)) {
-          switch (onFetchArray) {
-            case 'append':
-              propValue =
-                getObjectFromStore()[propName]
-                  .filter(({ id }) => !array.some(e => e.id === id))
-                  .concat(propValue);
-              break;
+        if (getObjectFromStore()?.[propName]) {
+          if (!['append', 'override', 'remove'].includes(onFetchArray)) {
+            throw new Error(`specify whether elements in \`${propName}\` must be appended, removed or must override the existing cached array`);
+          }
 
-            case 'remove':
-              propValue =
-                getObjectFromStore()[propName]
-                  .filter(({ id }) => !array.some(e => e.id === id));
-              break;
+          if (['append', 'remove'].includes(onFetchArray)) {
+            switch (onFetchArray) {
+              case 'append':
+                propValue =
+                  getObjectFromStore()[propName]
+                    .filter(({ id }) => !array.some(e => e.id === id))
+                    .concat(propValue);
+                break;
+
+              case 'remove':
+                propValue =
+                  getObjectFromStore()[propName]
+                    .filter(({ id }) => !array.some(e => e.id === id));
+                break;
+            }
           }
         }
       } else {
