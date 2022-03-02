@@ -4,8 +4,8 @@ import {
   isEntity,
   isNullOrUndefined,
   isObjectLiteral
-} from './utils';
-import store from './store';
+} from '../../utils';
+import store from '../../store';
 
 export default class QueryCache {
   constructor(data) {

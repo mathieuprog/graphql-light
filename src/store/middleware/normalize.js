@@ -1,5 +1,5 @@
-import createProxy from './createProxy';
-import UpdateType from './UpdateType';
+import createProxy from '../createProxy';
+import UpdateType from '../../constants/UpdateType';
 import {
   areObjectsEqual,
   isArray,
@@ -7,7 +7,7 @@ import {
   isEntity,
   isObjectLiteral,
   unique
-} from './utils';
+} from '../../utils';
 
 export function removeEntity(entity) {
   return { type: 'remove', id: entity.id };
@@ -26,13 +26,15 @@ const hooks = {
   onCompareObjects: hookOnCompareObjects
 };
 
-export default function normalizeAndStore(store, denormalizedData, callbacks = {}) {
+export default function normalize(result, store, callbacks = {}) {
+  const { denormalizedData } = result;
+
   let updates = [];
 
   const newEntities = { byId: { ...store.entities } };
 
   [].concat(denormalizedData).forEach(entity => {
-    doNormalizeAndStore(store, entity, () => store.getEntityById(entity.id), callbacks, newEntities, updates);
+    doNormalize(store, entity, () => store.getEntityById(entity.id), callbacks, newEntities, updates);
   });
 
   updates = unique(updates);
@@ -40,11 +42,13 @@ export default function normalizeAndStore(store, denormalizedData, callbacks = {
   const deletedEntityIds = updates.filter(({ type }) => type === UpdateType.DELETE_ENTITY).map(({ entity }) => entity.id);
   updates = updates.filter(({ entity, type }) => !deletedEntityIds.includes(entity.id) || type === UpdateType.DELETE_ENTITY);
 
-  return { entities: newEntities.byId, updates };
+  store.entities = newEntities.byId;
+
+  return { ...result, updates };
 }
 
 // `getObjectFromStore` argument is used for appending to an array of entities from nested object literals/arrays.
-function doNormalizeAndStore(store, object, getObjectFromStore, callbacks, newEntities, updates) {
+function doNormalize(store, object, getObjectFromStore, callbacks, newEntities, updates) {
   if (!isObjectLiteral(object)) {
     throw new Error(`unexpected condition, not an object literal: "${JSON.stringify(object)}"`);
   }
@@ -65,12 +69,12 @@ function doNormalizeAndStore(store, object, getObjectFromStore, callbacks, newEn
     if (isEntity(propValue)) {
       let entity = propValue; // renaming for readability
 
-      doNormalizeAndStore(store, entity, () => store.getEntityById(entity.id), callbacks, newEntities, updates);
+      doNormalize(store, entity, () => store.getEntityById(entity.id), callbacks, newEntities, updates);
 
       propValue = createProxy(entity, store.getEntityById.bind(store));
 
     } else if (isObjectLiteral(propValue)) {
-      propValue = doNormalizeAndStore(store, propValue, () => getObjectFromStore()?.[propName], callbacks, newEntities, updates);
+      propValue = doNormalize(store, propValue, () => getObjectFromStore()?.[propName], callbacks, newEntities, updates);
 
     } else if (isArray(propValue)) {
       const array = propValue; // renaming for readability
@@ -79,7 +83,7 @@ function doNormalizeAndStore(store, object, getObjectFromStore, callbacks, newEn
 
       if (isArrayOfEntities(array) || onFetchArray) {
         array.forEach(entity => {
-          doNormalizeAndStore(store, entity, () => store.getEntityById(entity.id), callbacks, newEntities, updates);
+          doNormalize(store, entity, () => store.getEntityById(entity.id), callbacks, newEntities, updates);
         });
 
         propValue =
@@ -184,7 +188,7 @@ function doNormalizeAndStore(store, object, getObjectFromStore, callbacks, newEn
 function processArrayRecursively(array, store, getObjectFromStore, callbacks, newEntities, updates) {
   return array.map((element, i) => {
     if (isObjectLiteral(element)) {
-      return doNormalizeAndStore(store, element, () => getObjectFromStore()?.[i], callbacks, newEntities, updates);
+      return doNormalize(store, element, () => getObjectFromStore()?.[i], callbacks, newEntities, updates);
     }
 
     if (isArray(element)) {

@@ -1,4 +1,4 @@
-const OnUnobservedStrategy = Object.freeze({
+export default Object.freeze({
   /**
    * When there are no observers, keep updating because the query with params is expected to be called frequently.
    *
@@ -28,5 +28,3 @@ const OnUnobservedStrategy = Object.freeze({
    */
   PAUSE_UPDATING: 'PAUSE_UPDATING'
 });
-
-export default OnUnobservedStrategy;

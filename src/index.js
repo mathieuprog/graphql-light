@@ -1,27 +1,35 @@
-import Client from './Client';
-import DerivedQuery from './DerivedQuery';
-import FetchStrategy from './FetchStrategy';
-import GraphQLError from './GraphQLError';
-import Mutation from './Mutation';
-import NetworkRequest from './NetworkRequest';
-import NotFoundInCacheError from './NotFoundInCacheError';
-import OnUnobservedStrategy from './OnUnobservedStrategy';
-import Query from './Query';
+import Client from './client/Client';
+import NetworkRequest from './client/NetworkRequest';
+import FetchStrategy from './constants/FetchStrategy';
+import OnUnobservedStrategy from './constants/OnUnobservedStrategy';
+import UpdateType from './constants/UpdateType';
+import GraphQLError from './errors/GraphQLError';
+import NotFoundInCacheError from './errors/NotFoundInCacheError';
+import Mutation from './mutation/Mutation';
+import DerivedQuery from './query/DerivedQuery';
+import Query from './query/Query';
 import store from './store';
-import transform from './transform';
-import UpdateType from './UpdateType';
+import {
+  removeEntity,
+  removeEntityById,
+  updateEntity
+} from './store/middleware/normalize';
+import transform from './utils/transform';
 
 export {
   Client,
-  DerivedQuery,
-  FetchStrategy,
-  GraphQLError,
-  Mutation,
   NetworkRequest,
-  NotFoundInCacheError,
+  FetchStrategy,
   OnUnobservedStrategy,
+  UpdateType,
+  GraphQLError,
+  NotFoundInCacheError,
+  Mutation,
+  DerivedQuery,
   Query,
   store,
-  transform,
-  UpdateType
+  removeEntity,
+  removeEntityById,
+  updateEntity,
+  transform
 }

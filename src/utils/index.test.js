@@ -1,4 +1,4 @@
-import { areArraysEqual, areObjectsEqual } from './utils';
+import { areArraysEqual, areObjectsEqual } from './index';
 
 test('object equality', () => {
   expect(

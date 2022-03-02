@@ -1,9 +1,11 @@
-import normalizeAndStore from './normalizeAndStore';
-import refreshDenormalizedData from './refreshDenormalizedData';
-import updateLinks from './updateLinks';
-import { isObjectSubset } from './utils';
+import normalize from './middleware/normalize';
+import updateLinks from './middleware/updateLinks';
+import refreshDenormalizedData from './middleware/refreshDenormalizedData';
+import notifySubscribers from './middleware/notifySubscribers';
+import { isObjectSubset } from '../utils';
+import { pipe, pipefy } from 'pipe-pipefy';
 
-class Store {
+export default class Store {
   constructor() {
     this.initialize();
   }
@@ -26,30 +28,25 @@ class Store {
     };
   }
 
-  notifySubscribers(updates) {
-    for (const { subscriber } of this.subscribers) {
-      subscriber(updates); // Call all subscriptions
-    }
-  }
-
   store(denormalizedData, callbacks = {}) {
-    let { entities, updates } = normalizeAndStore(this, denormalizedData, callbacks);
-    this.entities = entities;
+    let updates, updatesToListenTo;
+    ({
+      denormalizedData,
+      updates,
+      updatesToListenTo
+    } =
+      pipe(
+        pipefy(normalize, this, callbacks),
+        pipefy(updateLinks, this),
+        pipefy(refreshDenormalizedData, this),
+        pipefy(notifySubscribers, this),
+      )({ denormalizedData }));
 
-    const { entities: entities_, links, updates: _updates } = updateLinks(entities, this.links, updates);
-    entities = entities_;
-    updates = _updates;
-    this.entities = entities;
-    this.links = links;
-
-    const { denormalizedData: denormalizedData_, updatesToListenTo } = refreshDenormalizedData(this.entities, denormalizedData);
-    denormalizedData = denormalizedData_;
-
-    if (updates.length > 0) {
-      this.notifySubscribers(updates);
-    }
-
-    return { updatesToListenTo, updates, denormalizedData };
+    return {
+      denormalizedData,
+      updates,
+      updatesToListenTo
+    };
   }
 
   setConfig(newConfig) {
@@ -103,9 +100,3 @@ class Store {
     return list[0];
   }
 }
-
-const store = new Store();
-
-globalThis.store = store;
-
-export default store;

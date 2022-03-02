@@ -1,7 +1,7 @@
-import OnUnobservedStrategy from './OnUnobservedStrategy';
-import Query from './Query';
-import UpdateType from './UpdateType';
-import { deepFreeze } from './utils';
+import OnUnobservedStrategy from '../../constants/OnUnobservedStrategy';
+import UpdateType from '../../constants/UpdateType';
+import Query from '../Query';
+import { deepFreeze } from '../../utils';
 import { jest } from '@jest/globals';
 
 const denormalizedData = deepFreeze({

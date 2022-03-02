@@ -1,4 +1,4 @@
-import UpdateType from './UpdateType';
+import UpdateType from '../../constants/UpdateType';
 import {
   isArray,
   isArrayOfEntities,
@@ -6,16 +6,18 @@ import {
   isNullOrUndefined,
   isObjectLiteral,
   unique
-} from './utils';
+} from '../../utils';
 
-export default function refreshDenormalizedData(entities, denormalizedData) {
+export default function refreshDenormalizedData(result, store) {
+  let { denormalizedData } = result;
+
   let updatesToListenTo = [];
 
-  denormalizedData = doRefresh(entities, denormalizedData, updatesToListenTo);
+  denormalizedData = doRefresh(store.entities, denormalizedData, updatesToListenTo);
 
   updatesToListenTo = unique(updatesToListenTo);
 
-  return { denormalizedData, updatesToListenTo };
+  return { ...result, denormalizedData, updatesToListenTo };
 }
 
 function doRefresh(entities, data, updatesToListenTo, nestedEntity = false, getDataFromStore = null) {

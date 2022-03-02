@@ -1,5 +1,5 @@
-import FetchStrategy from './FetchStrategy';
-import NotFoundInCacheError from './NotFoundInCacheError';
+import FetchStrategy from '../constants/FetchStrategy';
+import NotFoundInCacheError from '../errors/NotFoundInCacheError';
 
 export default function getFetchStrategyAlgorithm(strategy) {
   return async ({ isCached, fetchData, cacheData }) => {

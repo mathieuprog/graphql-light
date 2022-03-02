@@ -1,5 +1,5 @@
 import ky from 'ky';
-import GraphQLError from './GraphQLError';
+import GraphQLError from '../errors/GraphQLError';
 
 export default class Client {
   constructor(url, options) {

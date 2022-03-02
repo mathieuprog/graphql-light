@@ -1,7 +1,7 @@
-import store from './store';
+import store from '../store';
 import AbstractQueryForVars from './AbstractQueryForVars';
-import FetchStrategy from './FetchStrategy';
-import { isObjectSubset } from './utils';
+import FetchStrategy from '../constants/FetchStrategy';
+import { isObjectSubset } from '../utils';
 
 export default class DerivedQueryForVars extends AbstractQueryForVars {
   constructor(derivedQuery, variables) {

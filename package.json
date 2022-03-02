@@ -20,7 +20,8 @@
   "dependencies": {
     "@js-temporal/polyfill": "^0.3.0",
     "ky": "^0.28.7",
-    "object-array-utils": "^1.1.2"
+    "object-array-utils": "^1.1.2",
+    "pipe-pipefy": "^1.0.0"
   },
   "main": "src/index.js",
   "repository": {

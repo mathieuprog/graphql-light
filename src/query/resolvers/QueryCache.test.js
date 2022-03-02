@@ -1,5 +1,5 @@
 import QueryCache from './QueryCache';
-import { isObjectSubset } from './utils';
+import { isObjectSubset } from '../../utils';
 import { deleteNestedProp, setNestedProp } from 'dynamic-props-immutable';
 
 const denormalizedData = {

@@ -1,4 +1,4 @@
-import UpdateType from './UpdateType';
+import UpdateType from '../../constants/UpdateType';
 import {
   isArray,
   isArrayOfEntities,
@@ -6,11 +6,13 @@ import {
   isNullOrUndefined,
   isObjectLiteral,
   unique
-} from './utils';
+} from '../../utils';
 
-export default function updateLinks(entities, links, updates) {
-  entities = { ...entities };
-  links = { ...links };
+export default function updateLinks(result, store) {
+  let { updates } = result;
+
+  const entities = { ...store.entities };
+  const links = { ...store.links };
   updates = [...updates];
 
   const deletedEntities = updates.filter(({ type }) => type === UpdateType.DELETE_ENTITY);
@@ -51,7 +53,10 @@ export default function updateLinks(entities, links, updates) {
 
   updates = unique(updates);
 
-  return { links, entities, updates };
+  store.entities = entities;
+  store.links = links;
+
+  return { ...result, updates };
 }
 
 function removeDeletedEntity(entity, deletedEntityId, updates) {

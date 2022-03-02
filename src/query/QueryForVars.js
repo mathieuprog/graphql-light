@@ -1,13 +1,11 @@
-import store from './store';
+import store from '../store';
 import AbstractQueryForVars from './AbstractQueryForVars';
-import FetchStrategy from './FetchStrategy';
+import FetchStrategy from '../constants/FetchStrategy';
+import OnUnobservedStrategy from '../constants/OnUnobservedStrategy';
 import getFetchStrategyAlgorithm from './getFetchStrategyAlgorithm';
-import QueryCacheStrategy from './QueryCacheStrategy';
-import UserResolverStrategy from './UserResolverStrategy';
-import OnUnobservedStrategy from './OnUnobservedStrategy';
-import { isObjectSubset } from './utils';
-
-export { OnUnobservedStrategy };
+import QueryCacheStrategy from './resolvers/QueryCacheStrategy';
+import CustomResolverStrategy from './resolvers/CustomResolverStrategy';
+import { isObjectSubset } from '../utils';
 
 export default class QueryForVars extends AbstractQueryForVars {
   constructor(query, executeRequest, variables, onUnobservedStrategy, options) {
@@ -57,7 +55,7 @@ export default class QueryForVars extends AbstractQueryForVars {
   getResolverStrategy() {
     if (this.query.userResolver) {
       const resolver = () => this.query.userResolver(this.variables, store.getEntities());
-      return new UserResolverStrategy(resolver);
+      return new CustomResolverStrategy(resolver);
     }
 
     return new QueryCacheStrategy();
@@ -124,7 +122,7 @@ export default class QueryForVars extends AbstractQueryForVars {
     const unsubscriber = store.subscribe(updates => {
       const onStoreUpdate = update => this.query.onStoreUpdate(update, this.variables, isObjectSubset);
       const isUpdate = update => this.updatesToListenTo.some(u => {
-        return update.entity.id === u.entity.id && isObjectSubset(update, u)
+        return update.entity.id === u.entity.id && isObjectSubset(update, u);
       });
 
       this.strategy.processUpdates(updates, onStoreUpdate, isUpdate, this.notifySubscribers.bind(this));

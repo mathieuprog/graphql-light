@@ -1,10 +1,10 @@
-import store from './store';
+import store from '../store';
 import Query from './Query';
-import FetchStrategy from './FetchStrategy';
-import { deepFreeze } from './utils';
+import FetchStrategy from '../constants/FetchStrategy';
+import { deepFreeze } from '../utils';
 import { jest } from '@jest/globals';
 import { Temporal } from '@js-temporal/polyfill';
-import { removeEntityById } from './normalizeAndStore';
+import { removeEntityById } from '../store/middleware/normalize';
 
 const denormalizedData = deepFreeze({
   id: 'person1',

@@ -3,7 +3,7 @@ import QueryCache from './QueryCache';
 import {
   isEntity,
   isObjectLiteral
-} from './utils';
+} from '../../utils';
 
 export default class QueryCacheStrategy extends AbstractQueryResolverStrategy {
   constructor() {

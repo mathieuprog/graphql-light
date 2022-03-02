@@ -1,6 +1,6 @@
-import store from './store';
-import transform from './transform';
-import { deepFreeze, isArray } from './utils';
+import store from './index';
+import transform from '../utils/transform';
+import { deepFreeze, isArray } from '../utils';
 import { jest } from '@jest/globals';
 
 const denormalizedData = deepFreeze({ foo: { // test immutability

@@ -1,6 +1,6 @@
 import AbstractQueryResolverStrategy from './AbstractQueryResolverStrategy';
 
-export default class UserResolverStrategy extends AbstractQueryResolverStrategy {
+export default class CustomResolverStrategy extends AbstractQueryResolverStrategy {
   constructor(resolver) {
     super();
     this.resolver = resolver;
