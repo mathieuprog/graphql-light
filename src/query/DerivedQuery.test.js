@@ -68,7 +68,7 @@ const denormalizedData = deepFreeze({
   }
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   store.initialize();
 
   const onFetchArrayOfEntities = (propName, object) => {
@@ -84,7 +84,7 @@ beforeEach(() => {
     }
   };
 
-  store.store(denormalizedData, { onFetchArrayOfEntities });
+  await store.store(denormalizedData, { onFetchArrayOfEntities });
 });
 
 test('DerivedQuery', async () => {

@@ -9,20 +9,20 @@ export default function getFetchStrategyAlgorithm(strategy) {
 
       case FetchStrategy.CACHE_FIRST:
         if (!isCached) {
-          cacheData(await fetchData());
+          await cacheData(await fetchData());
         }
         break;
 
       case FetchStrategy.CACHE_AND_NETWORK:
         if (!isCached) {
-          cacheData(await fetchData());
+          await cacheData(await fetchData());
         } else {
           fetchData().then(cacheData);
         }
         break;
 
       case FetchStrategy.NETWORK_ONLY:
-        cacheData(await fetchData());
+        await cacheData(await fetchData());
         break;
 
       case FetchStrategy.CACHE_ONLY:

@@ -14,7 +14,6 @@ import {
   removeEntityById,
   updateEntity
 } from './store/middleware/normalize';
-import transform from './utils/transform';
 
 export {
   Client,
@@ -30,6 +29,5 @@ export {
   store,
   removeEntity,
   removeEntityById,
-  updateEntity,
-  transform
+  updateEntity
 }

@@ -53,8 +53,8 @@ export default class QueryForVars extends AbstractQueryForVars {
   }
 
   getResolverStrategy() {
-    if (this.query.userResolver) {
-      const resolver = () => this.query.userResolver(this.variables, store.getEntities());
+    if (this.query.customResolver) {
+      const resolver = () => this.query.customResolver(this.variables, store.getEntities());
       return new CustomResolverStrategy(resolver);
     }
 
@@ -137,6 +137,10 @@ export default class QueryForVars extends AbstractQueryForVars {
     this.solicitedAt = new Date();
     this.initTimeoutClearWhenInactiveForDuration();
 
+    if (this.query.dependentQueries.length > 0) {
+      await Promise.all(this.query.dependentQueries.map(fun => fun(this.variables)));
+    }
+
     await getFetchStrategyAlgorithm(options.fetchStrategy || FetchStrategy.CACHE_FIRST)({
       fetchData: this.fetchData.bind(this),
       cacheData: this.cacheData.bind(this),
@@ -150,14 +154,14 @@ export default class QueryForVars extends AbstractQueryForVars {
     return this.query.transformer(data, this.variables);
   }
 
-  cacheData(data) {
+  async cacheData(data) {
     const onFetchEntity =
       (entity) => this.query.onFetchEntity(entity, this.variables, data);
 
     const onFetchArrayOfEntities =
       (propName, object) => this.query.onFetchArrayOfEntities(propName, object, this.variables, data);
 
-    const { updatesToListenTo, denormalizedData } = store.store(data, { onFetchEntity, onFetchArrayOfEntities });
+    const { updatesToListenTo, denormalizedData } = await store.store(data, { onFetchEntity, onFetchArrayOfEntities });
     this.updatesToListenTo = updatesToListenTo;
 
     this.strategy.setFetchedData(denormalizedData);

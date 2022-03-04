@@ -198,35 +198,45 @@ In the example below, every incoming object with typename "Article" will have it
 ```javascript
 import { store, transform } from 'graphql-light';
 
-store.setConfig({ transformers: { transformArticle } });
-
-function transformArticle(article) {
-  return transform(article, {
-    publishDate: Temporal.PlainDateTime.from
-  });
-}
+store.setConfig({
+  transformers: {
+    Article: {
+      data: {
+        publishDate: Temporal.PlainDateTime.from
+      }
+    }
+  }
+});
 ```
 
 Another nice thing to do, is convert the foreign keys into objects, to allow chaining properties as if data is denormalized:
 
 ```javascript
-function transformArticle(article) {
-  if ('authorId' in article) {
-    article.author = article.authorId;
-    delete article.authorId;
-  }
+import { FetchStrategy } from 'graphql-light';
+import client from './client';
 
-  return transform(article, {
-    author: authorId => ({
-      id: authorId,
-      __typename: 'Author'
-    }),
-    publishDate: Temporal.PlainDateTime.from
-  });
-}
+store.setConfig({
+  transformers: {
+    Article: {
+      data: {
+        publishDate: Temporal.PlainDateTime.from
+      },
+      references: {
+        authorId: {
+          type: 'Author',
+          field: 'author',
+          async handleMissing(authorId) {
+            await someQuery.query({},
+              { fetchStrategy: FetchStrategy.NETWORK_ONLY });
+          }
+        }
+      }
+    }
+  }
+});
 ```
 
-The global transformers work with a convention, where the function name is prefixed by "transform" followed by the object's typename we want to transform. So in order to transform objects of type "Article", we create a function named `transformArticle`.
+This also allows to avoid fetching what has been previously fetched. If the authors have been previously fetched, we now just specify that the authorId on an Article points to an Author. In the result of the query, a field author is added alongside authorId.
 
 ### Delete and update entities
 

@@ -1,9 +1,11 @@
+// import transformServerData from './middleware/transformServerData';
+import proxifyReferences from './middleware/proxifyReferences';
 import normalize from './middleware/normalize';
 import updateLinks from './middleware/updateLinks';
 import refreshDenormalizedData from './middleware/refreshDenormalizedData';
 import notifySubscribers from './middleware/notifySubscribers';
 import { isObjectSubset } from '../utils';
-import { pipe, pipefy } from 'pipe-pipefy';
+import { pipeAsync, pipe, pipefy } from 'pipe-pipefy';
 
 export default class Store {
   constructor() {
@@ -28,14 +30,16 @@ export default class Store {
     };
   }
 
-  store(denormalizedData, callbacks = {}) {
+  async store(denormalizedData, callbacks = {}) {
     let updates, updatesToListenTo;
     ({
       denormalizedData,
       updates,
       updatesToListenTo
     } =
-      pipe(
+      await pipeAsync(
+        // pipefy(transformServerData, this),
+        pipefy(proxifyReferences, this),
         pipefy(normalize, this, callbacks),
         pipefy(updateLinks, this),
         pipefy(refreshDenormalizedData, this),

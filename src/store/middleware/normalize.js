@@ -8,6 +8,7 @@ import {
   isObjectLiteral,
   unique
 } from '../../utils';
+import transform from '../../utils/transform';
 
 export function removeEntity(entity) {
   return { type: 'remove', id: entity.id };
@@ -56,7 +57,10 @@ function doNormalize(store, object, getObjectFromStore, callbacks, newEntities, 
   object = { ...object };
 
   if (isEntity(object)) {
-    object = store.config.transformers[`transform${object.__typename}`]?.(object) ?? object;
+    const transformResolvers = store.config.transformers[object.__typename]?.data;
+    if (transformResolvers) {
+      object = transform(object, transformResolvers);
+    }
   }
 
   let normalizedObject = object;

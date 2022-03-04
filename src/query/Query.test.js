@@ -69,7 +69,7 @@ const denormalizedData = deepFreeze({
   }
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   store.initialize();
 
   const onFetchArrayOfEntities = (propName, object) => {
@@ -85,7 +85,7 @@ beforeEach(() => {
     }
   };
 
-  store.store(denormalizedData, { onFetchArrayOfEntities });
+  await store.store(denormalizedData, { onFetchArrayOfEntities });
 });
 
 test('Query', async () => {
@@ -365,4 +365,46 @@ test('refreshAfterDuration', async () => {
   expect(executeRequest).toHaveBeenCalledTimes(4);
 
   query3.removeQueryForVars({});
+});
+
+test('setDependentQueries', async () => {
+  const request1 = jest.fn();
+  const request2 = jest.fn();
+  const resolver1 = jest.fn();
+  const resolver2 = jest.fn();
+
+  const client1 = {
+    request(_queryDocument, _variables) {
+      request1();
+      return { id: 'person2', __typename: 'Person', name: 'John' };
+    }
+  }
+
+  const client2 = {
+    request(_queryDocument, _variables) {
+      request2();
+      return { id: 'person2', __typename: 'Person', name: 'James' };
+    }
+  }
+
+  const query1 = new Query(client1, null);
+  query1.setResolver(() => (resolver1(), 1));
+
+  expect(request1).toHaveBeenCalledTimes(0);
+  expect(request2).toHaveBeenCalledTimes(0);
+  expect(resolver1).toHaveBeenCalledTimes(0);
+  expect(resolver2).toHaveBeenCalledTimes(0);
+
+  const query2 = new Query(client2, null);
+  query2.setResolver(() => (resolver2(), 1));
+  query2.setDependentQueries([
+    (_variables) => query1.query({})
+  ]);
+
+  await query2.query({ foo: 1 });
+
+  expect(request1).toHaveBeenCalledTimes(1);
+  expect(request2).toHaveBeenCalledTimes(1);
+  expect(resolver1).toHaveBeenCalledTimes(1);
+  expect(resolver2).toHaveBeenCalledTimes(1);
 });

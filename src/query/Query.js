@@ -7,7 +7,7 @@ export default class Query extends AbstractQuery {
   // transformer: function transforming data before storage
   constructor(client, queryDocument) {
     super();
-    this.userResolver = null;
+    this.customResolver = null;
     this.client = client;
     this.queryDocument = queryDocument;
     this.transformer = data => data;
@@ -17,10 +17,15 @@ export default class Query extends AbstractQuery {
     this.queriesForVars = {};
     this.getOnUnobservedStrategy = _variables => OnUnobservedStrategy.PAUSE_UPDATING;
     this.getOptions = _variables => ({});
+    this.dependentQueries = [];
+  }
+
+  setDependentQueries(queries) {
+    this.dependentQueries = queries;
   }
 
   setResolver(resolver) {
-    this.userResolver = resolver;
+    this.customResolver = resolver;
   }
 
   setTransformer(transformer) {

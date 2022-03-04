@@ -1,5 +1,4 @@
 import store from './index';
-import transform from '../utils/transform';
 import { deepFreeze, isArray } from '../utils';
 import { jest } from '@jest/globals';
 
@@ -95,15 +94,18 @@ const onFetchArrayOfEntities = (propName, _object) => {
   }
 };
 
-test('transform before storing', () => {
+test('transform before storing', async () => {
   store.setConfig({
     transformers: {
-      transformPhone: entity =>
-        transform(entity, {
+      Phone: {
+        data: {
           number: Number
-        })}});
+        }
+      }
+    }
+  });
 
-  store.store(denormalizedData, { onFetchEntity, onFetchArrayOfEntities });
+  await store.store(denormalizedData, { onFetchEntity, onFetchArrayOfEntities });
 
   const entities = store.getEntities();
 
@@ -111,8 +113,8 @@ test('transform before storing', () => {
   expect(entities['person1'].contacts.dummy.phones[0].number).toBe(10);
 });
 
-test('store', () => {
-  store.store(denormalizedData, { onFetchEntity, onFetchArrayOfEntities });
+test('store', async () => {
+  await store.store(denormalizedData, { onFetchEntity, onFetchArrayOfEntities });
 
   expect(isArray(store.filterEntities({ id: 'person1' }).person1.test[0])).toBeTruthy();
 
@@ -122,17 +124,17 @@ test('store', () => {
 
   expect(subscriber).toHaveBeenCalledTimes(0);
 
-  store.store({ id: 'person2', __typename: 'Person', name: 'Jérôme' }, { onFetchEntity, onFetchArrayOfEntities });
+  await store.store({ id: 'person2', __typename: 'Person', name: 'Jérôme' }, { onFetchEntity, onFetchArrayOfEntities });
 
   expect(subscriber).toHaveBeenCalledTimes(1);
 
-  store.store({ id: 'person3', __typename: 'Person', name: 'John' }, { onFetchEntity, onFetchArrayOfEntities });
+  await store.store({ id: 'person3', __typename: 'Person', name: 'John' }, { onFetchEntity, onFetchArrayOfEntities });
 
   expect(subscriber).toHaveBeenCalledTimes(2);
 
   unsubscribe();
 
-  store.store({ id: 'person4', __typename: 'Person', name: 'James' }, { onFetchEntity, onFetchArrayOfEntities });
+  await store.store({ id: 'person4', __typename: 'Person', name: 'James' }, { onFetchEntity, onFetchArrayOfEntities });
 
   expect(subscriber).toHaveBeenCalledTimes(2);
 

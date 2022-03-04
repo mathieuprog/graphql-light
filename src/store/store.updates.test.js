@@ -103,7 +103,7 @@ const denormalizedData = deepFreeze({
   arrayOfPrimitives: [4, 2]
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   store.initialize();
 
   const onFetchArrayOfEntities = (propName, object) => {
@@ -119,7 +119,7 @@ beforeEach(() => {
     }
   };
 
-  store.store(denormalizedData, { onFetchArrayOfEntities });
+  await store.store(denormalizedData, { onFetchArrayOfEntities });
 
   store.store({
     id: 'person2',
@@ -135,7 +135,7 @@ beforeEach(() => {
   }, { onFetchArrayOfEntities });
 });
 
-test('collect updates', () => {
+test('collect updates', async () => {
   const entity = {
     id: 'person1',
     __typename: 'Person',
@@ -255,7 +255,7 @@ test('collect updates', () => {
   expect(store.entities['person1'].articles.length).toBe(3);
   expect(store.entities['person2'].articles.length).toBe(1);
 
-  const { updates, updatesToListenTo } = store.store(entity, { onFetchEntity, onFetchArrayOfEntities });
+  const { updates, updatesToListenTo } = await store.store(entity, { onFetchEntity, onFetchArrayOfEntities });
 
   expect(store.entities['article1']).toBeUndefined();
   expect(store.entities['person1'].articles.length).toBe(2);

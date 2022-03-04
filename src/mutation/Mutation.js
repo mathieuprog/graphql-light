@@ -35,7 +35,7 @@ export default class Mutation {
       const onFetchArrayOfEntities =
         (propName, object) => this.setOnFetchArrayOfEntities(propName, object, variables, data);
 
-      store.store(transformedData, { onFetchEntity, onFetchArrayOfEntities });
+      await store.store(transformedData, { onFetchEntity, onFetchArrayOfEntities });
     }
 
     return data;

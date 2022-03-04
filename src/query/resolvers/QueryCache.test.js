@@ -83,9 +83,9 @@ const onFetchArrayOfEntities = (propName, object) => {
   }
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   store.initialize();
-  store.store(denormalizedData, { onFetchArrayOfEntities });
+  await store.store(denormalizedData, { onFetchArrayOfEntities });
 });
 
 test('applyUpdate', () => {
@@ -165,7 +165,7 @@ test('applyUpdate', () => {
   })).toBeTruthy();
 });
 
-test('refresh', () => {
+test('refresh', async () => {
   let queryCache = new QueryCache({
     id: 'article1',
     __typename: 'Article',
@@ -189,7 +189,7 @@ test('refresh', () => {
   let updatedDenormalizedData = setNestedProp`list[${0}].foo[${0}].articles[${0}].title`(denormalizedData, 'Foobar');
 
   store.initialize();
-  store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
+  await store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
 
   expect(queryCache.get()).toEqual({
     id: 'article1',
@@ -208,7 +208,7 @@ test('refresh', () => {
   updatedDenormalizedData = deleteNestedProp`list[${0}].foo[${0}].articles[${0}]`(denormalizedData, { resizeArray: true });
 
   store.initialize();
-  store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
+  await store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
 
   queryCache.refresh();
 
@@ -236,8 +236,7 @@ test('refresh', () => {
             __typename: 'Phone',
             number: '20'
           }
-        ],
-        // __onArray: { phones: 'append' }
+        ]
       }
     }
   });
@@ -250,7 +249,7 @@ test('refresh', () => {
   updatedDenormalizedData = setNestedProp`contacts.dummy.address.street`(updatedDenormalizedData, 'Some street');
 
   store.initialize();
-  store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
+  await store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
 
   queryCache.refresh();
 
@@ -269,7 +268,7 @@ test('refresh', () => {
   updatedDenormalizedData = setNestedProp`contacts.dummy.phones[${0}].number`(updatedDenormalizedData, '42');
 
   store.initialize();
-  store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
+  await store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
 
   queryCache.refresh();
 
@@ -282,7 +281,7 @@ test('refresh', () => {
   updatedDenormalizedData = deleteNestedProp`contacts.dummy.phones[${0}]`(denormalizedData, { resizeArray: true });
 
   store.initialize();
-  store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
+  await store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
 
   queryCache.refresh();
 
