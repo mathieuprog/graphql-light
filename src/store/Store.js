@@ -4,8 +4,9 @@ import normalize from './middleware/normalize';
 import updateLinks from './middleware/updateLinks';
 import refreshDenormalizedData from './middleware/refreshDenormalizedData';
 import notifySubscribers from './middleware/notifySubscribers';
+import checkMissingLinks from './middleware/checkMissingLinks';
 import { isObjectSubset } from '../utils';
-import { pipeAsync, pipe, pipefy } from 'pipe-pipefy';
+import { pipeAsync, pipefy, pipefyIf } from 'pipe-pipefy';
 
 export default class Store {
   constructor() {
@@ -17,7 +18,7 @@ export default class Store {
     this.links = {};
     this.initializedAt = new Date();
     this.subscribers = new Set();
-    this.config = { transformers: {} };
+    this.config = { transformers: {}, debug: true };
   }
 
   subscribe(subscriber) {
@@ -44,6 +45,7 @@ export default class Store {
         pipefy(updateLinks, this),
         pipefy(refreshDenormalizedData, this),
         pipefy(notifySubscribers, this),
+        pipefyIf(this.config.debug, checkMissingLinks, this)
       )({ denormalizedData }));
 
     return {

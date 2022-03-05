@@ -9,14 +9,18 @@ export default function createProxy(object, getById) {
         return target.__typename;
       }
 
-      const entity = getById(target.id);
-
-      if (prop === '__target__') {
-        return entity;
+      if (prop === '__isProxy__') {
+        return true;
       }
+
+      const entity = getById(target.id);
 
       if (!entity) {
         throw new Error(`no entity with ID ${target.id}`);
+      }
+
+      if (prop === '__target__') {
+        return entity;
       }
 
       return entity[prop];

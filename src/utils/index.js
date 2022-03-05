@@ -43,29 +43,15 @@ function isEntity(o) {
 }
 
 function isEntityProxy(o) {
-  if (isEntity(o)) {
-    return !!o.__target__;
-  }
-
-  return false;
+  return isEntity(o) && o.__isProxy__;
 }
 
 function isArrayOfEntities(a) {
-  if (!isArray(a) || a.length === 0) {
-    return false;
-  }
+  return isArray(a) && a.length > 0 && a.every(isEntity);
+}
 
-  return a.every(o => {
-    if (isObjectLiteral(o)) {
-      if (!!o.id !== !!o.__typename) {
-        throw new Error(`id or __typename not set: ${JSON.stringify(o)}`);
-      }
-
-      return o.id && o.__typename;
-    }
-
-    return false;
-  });
+function isArrayOfEntityProxies(a) {
+  return isArray(a) && a.length > 0 && a.every(isEntityProxy);
 }
 
 export {
@@ -76,6 +62,7 @@ export {
   hasObjectProps,
   isArray,
   isArrayOfEntities,
+  isArrayOfEntityProxies,
   isArrayOfObjects,
   isArrayOfObjectLiterals,
   isArraySubset,

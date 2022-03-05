@@ -20,10 +20,12 @@
 * [Errors](#errors)
 * [Advanced features](#advanced-features)
   * [Query caching strategies](#query-caching-strategies)
+  * [Dependent queries](#dependent-queries)
   * [Derived queries](#derived-queries)
   * [Fetching strategies](#fetching-strategies)
   * [Simple network requests](#simple-network-requests)
   * [Inspecting the cache](#inspecting-the-cache)
+  * [Debug mode](#debug-mode)
 * [Installation](#installation)
 
 ## Why GraphQL Light?
@@ -376,6 +378,16 @@ query.setOptions(_variables => ({
 }));
 ```
 
+### Dependent queries
+
+It is possible to specify a set queries that a specific query is depending on. This is especially useful for reducing the document's object graph, by asking for foreign keys for data that might already have been fetched by other queries.
+
+```javascript
+query.setDependentQueries([
+  (_variables) => otherQuery.query({})
+]);
+```
+
 ### Derived queries
 
 Derived queries allow to extract some part of data from larger queries, or allow to derive data from multiple queries.
@@ -502,6 +514,16 @@ store.subscribe(console.log)
 ```
 
 For each of these functions, the `subsetEntities` parameter is optional. If omitted, they act on the whole store.
+
+## Debug mode
+
+By default, the debug mode is on while the lib is in alpha, and it is recommended to keep it on. For now, the debug mode will only check the integrity of the store after updates.
+
+```javascript
+import { store } from 'graphql-light';
+
+store.setConfig({ debug: false });
+```
 
 ## Installation
 
