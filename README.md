@@ -26,6 +26,7 @@
   * [Simple network requests](#simple-network-requests)
   * [Inspecting the cache](#inspecting-the-cache)
   * [Debug mode](#debug-mode)
+* [API](#api)
 * [Installation](#installation)
 
 ## Why GraphQL Light?
