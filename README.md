@@ -198,7 +198,7 @@ There are two ways to transform incoming data:
 In the example below, every incoming object with typename "Article" will have its `publishDate` data (received as a string from the server) converted to a `PlainDateTime` object.
 
 ```javascript
-import { store, transform } from 'graphql-light';
+import { store } from 'graphql-light';
 
 store.setConfig({
   transformers: {
@@ -515,7 +515,7 @@ store.subscribe(console.log)
 
 For each of these functions, the `subsetEntities` parameter is optional. If omitted, they act on the whole store.
 
-## Debug mode
+### Debug mode
 
 By default, the debug mode is on while the lib is in alpha, and it is recommended to keep it on. For now, the debug mode will only check the integrity of the store after updates.
 
@@ -524,6 +524,82 @@ import { store } from 'graphql-light';
 
 store.setConfig({ debug: false });
 ```
+
+## API
+
+### Client
+
+#### `constructor(url, options)`
+
+#### `async request(query, variables = {})`
+
+### Query
+
+#### `constructor(client, queryDocument)`
+
+#### `async query(variables, options = {})`
+
+#### `async watch(variables, subscriber, getUnsubscribeFn, options = {})`
+
+#### `setDependentQueries(queries)`
+
+#### `setOnFetchArrayOfEntities(onFetchArrayOfEntities)`
+
+#### `setOnFetchEntity(onFetchEntity)`
+
+#### `setOnStoreUpdate(onStoreUpdate)`
+
+#### `setOnUnobservedStrategy(callback)`
+
+#### `setOptions(callback)`
+
+#### `setResolver(resolver)`
+
+#### `setTransformer(transformer)`
+
+### DerivedQuery
+
+#### `constructor(queries, resolver)`
+
+#### `async query(variables, options = {})`
+
+#### `async watch(variables, subscriber, getUnsubscribeFn, options = {})`
+
+#### `setOnQueryUpdate(onQueryUpdate)`
+
+### Mutation
+
+#### `constructor(client, queryDocument)`
+
+#### `async mutate(variables, callback = _ => true)`
+
+#### `setOnFetchArrayOfEntities(onFetchArrayOfEntities)`
+
+#### `setOnFetchEntity(onFetchEntity)`
+
+#### `setTransformer(transformer)`
+
+### NetworkRequest
+
+#### `constructor(client, queryDocument)`
+
+#### `async execute(variables)`
+
+### GraphQLError
+
+### FetchStrategy constants
+
+### OnUnobservedStrategy constants
+
+### UpdateType constants
+
+### removeEntity function
+
+### removeEntityById function
+
+### updateEntity function
+
+### store instance
 
 ## Installation
 
