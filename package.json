@@ -1,6 +1,6 @@
 {
   "name": "graphql-light",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "A simple GraphQL client",
   "funding": "https://github.com/mathieuprog/graphql-light?sponsor=1",
   "scripts": {
