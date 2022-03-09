@@ -32,7 +32,8 @@ async function doProxifyReferences(data, entity, store) {
       const linkData = getLinkData(propName);
       if (linkData && propValue) {
         if (isArray(propValue)) {
-          if (propValue.length > 0) {
+          // if we do not specify the __typename, we assume the entity has been previously stored
+          if (propValue.length > 0 && !propValue[0].__typename) {
             const { type, ensureHasFields, handleMissing } = linkData;
 
             const incompleteEntities =
