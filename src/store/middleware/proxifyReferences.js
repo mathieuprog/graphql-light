@@ -31,44 +31,76 @@ async function doProxifyReferences(data, entity, store) {
 
       const linkData = getLinkData(propName);
       if (linkData && propValue) {
-        if (isArray(propValue) && propValue.length > 0) {
-          const { type, ensureHasFields, handleMissing } = linkData;
+        if (isArray(propValue)) {
+          if (propValue.length > 0) {
+            const { type, ensureHasFields, handleMissing } = linkData;
 
-          const incompleteEntities =
-            propValue
-              .filter(({ id }) => {
-                const referencedEntity = store.getEntityById(id);
-                return !referencedEntity || (ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields));
-              })
-              .map(({ id }) => id);
+            const incompleteEntities =
+              propValue
+                .filter(({ id }) => {
+                  const referencedEntity = store.getEntityById(id);
+                  return !referencedEntity || (ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields));
+                })
+                .map(({ id }) => id);
 
-          if (incompleteEntities.length > 0) {
-            await handleMissing(incompleteEntities, entity);
+            if (incompleteEntities.length > 0) {
+              if (handleMissing) {
+                await handleMissing(incompleteEntities, entity);
 
-            propValue = propValue.filter(({ id }) => store.getEntityById(id));
+                if (ensureHasFields) {
+                  propValue
+                    .forEach(({ id }) => {
+                      const referencedEntity = store.getEntityById(id);
+                      if (referencedEntity && !hasObjectProps(referencedEntity, ensureHasFields)) {
+                        throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields}`);
+                      }
+                    });
+                }
+              } else if (ensureHasFields) {
+                propValue
+                  .forEach(({ id }) => {
+                    const referencedEntity = store.getEntityById(id);
+                    if (referencedEntity && !hasObjectProps(referencedEntity, ensureHasFields)) {
+                      throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields} (no \`handleMissing\` callback)`);
+                    }
+                  });
+              }
+
+              propValue = propValue.filter(({ id }) => store.getEntityById(id));
+            }
+
+            if (!propValue[0].__typename) {
+              propValue = propValue.map(entity => ({ ...entity, __typename: type }));
+            }
+
+            object[propName] = propValue.map(entity => createProxy(entity, store.getEntityById.bind(store)));
           }
-
-          if (!propValue[0].__typename) {
-            propValue = propValue.map(entity => ({ ...entity, __typename: type }));
-          }
-
-          object[propName] = propValue.map(entity => createProxy(entity, store.getEntityById.bind(store)));
         } else {
           const { type, field, ensureHasFields, handleMissing } = linkData;
 
+          // we have only the reference (e.g. we have `userId` field and no `user` field)
           if (!object[field]) {
             let referencedEntity = store.getEntityById(propValue);
 
-            if (!referencedEntity || (ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields))) {
-              await handleMissing(propValue, entity);
+            if (!referencedEntity || ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields)) {
+              if (handleMissing) {
+                await handleMissing(propValue, entity);
 
-              referencedEntity = store.getEntityById(propValue);
+                referencedEntity = store.getEntityById(propValue);
 
-              if (!referencedEntity) {
+                if (!referencedEntity) {
+                  object[field] = null;
+                  object[propName] = null;
+                } else if (ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields)) {
+                  throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields}`);
+                } else {
+                  object[field] = createProxy({ id: propValue, __typename: type }, store.getEntityById.bind(store));
+                }
+              } else if (ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields)) {
+                throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields} (no \`handleMissing\` callback)`);
+              } else {
                 object[field] = null;
                 object[propName] = null;
-              } else {
-                object[field] = createProxy({ id: propValue, __typename: type }, store.getEntityById.bind(store));
               }
             } else {
               object[field] = createProxy({ id: propValue, __typename: type }, store.getEntityById.bind(store));

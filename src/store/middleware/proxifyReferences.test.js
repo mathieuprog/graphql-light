@@ -89,6 +89,38 @@ test('missing reference', async () => {
   expect(person.contacts.dummy.addressId).toBe('address1');
 });
 
+test('missing reference and no handleMissing callback', async () => {
+  store.initialize();
+  store.setConfig({ transformers: {
+    Person: {
+      references: {
+        addressId: {
+          type: 'Address',
+          field: 'address'
+        }
+      }
+    }
+  } });
+  await store.store({});
+
+  const person = deepFreeze({
+    id: 'person1',
+    __typename: 'Person',
+    name: 'Mathieu',
+    contacts: {
+      dummy: {
+        addressId: 'address1'
+      }
+    }
+  });
+
+  const { denormalizedData: transformedData } = await proxifyReferences({ denormalizedData: person }, store);
+
+  expect(transformedData.contacts.dummy.address).toBeNull();
+  expect(transformedData.contacts.dummy.addressId).toBeNull();
+  expect(person.contacts.dummy.addressId).toBe('address1');
+});
+
 test('missing reference in array', async () => {
   store.initialize();
 
@@ -115,7 +147,45 @@ test('missing reference in array', async () => {
     name: 'Mathieu',
     contacts: {
       dummy: {
-        addresses: [{ id: 'address1', id: 'address2' }]
+        addresses: [{ id: 'address1' }, { id: 'address2' }]
+      }
+    }
+  });
+
+  const { denormalizedData: transformedData } = await proxifyReferences({ denormalizedData: person }, store);
+
+  expect(transformedData.contacts.dummy.addresses.length).toBe(1);
+  expect(transformedData.contacts.dummy.addresses[0].id).toBe('address2');
+  expect(transformedData.contacts.dummy.addresses[0].__typename).toBe('Address');
+  expect(isEntityProxy(transformedData.contacts.dummy.addresses[0])).toBeTruthy();
+});
+
+test('missing reference in array no handleMissing callback', async () => {
+  store.initialize();
+
+  await store.store({
+    id: 'address2',
+    __typename: 'Address',
+    street: 'Foo'
+  });
+
+  store.setConfig({ transformers: {
+    Person: {
+      references: {
+        addresses: {
+          type: 'Address'
+        }
+      }
+    }
+  } });
+
+  const person = deepFreeze({
+    id: 'person1',
+    __typename: 'Person',
+    name: 'Mathieu',
+    contacts: {
+      dummy: {
+        addresses: [{ id: 'address1' }, { id: 'address2' }]
       }
     }
   });
