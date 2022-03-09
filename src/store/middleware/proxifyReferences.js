@@ -69,7 +69,7 @@ async function doProxifyReferences(data, entity, store) {
               propValue = propValue.filter(({ id }) => store.getEntityById(id));
             }
 
-            if (!propValue[0].__typename) {
+            if (propValue.length > 0 && !propValue[0].__typename) {
               propValue = propValue.map(entity => ({ ...entity, __typename: type }));
             }
 
