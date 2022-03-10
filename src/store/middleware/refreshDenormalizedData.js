@@ -3,6 +3,7 @@ import {
   isArray,
   isArrayOfEntities,
   isEntity,
+  isEntityProxy,
   isNullOrUndefined,
   isObjectLiteral,
   unique
@@ -23,6 +24,10 @@ export default function refreshDenormalizedData(result, store) {
 function doRefresh(entities, data, updatesToListenTo, nestedEntity = false, getDataFromStore = null) {
   if (isNullOrUndefined(data)) {
     return null;
+  }
+
+  if (isEntityProxy(data)) {
+    return data;
   }
 
   if (isObjectLiteral(data)) {

@@ -1,6 +1,5 @@
 import {
   isArray,
-  isEntity,
   isEntityProxy,
   isObjectLiteral
 } from '../../utils';
