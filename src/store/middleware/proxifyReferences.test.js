@@ -213,8 +213,8 @@ test('fetch missing reference', async () => {
     }
   };
   const query = new Query(client, null);
-  const onMissingRelation = async (_propName, _propValue, _object, _variables, _data) => {
-    await query.query({}, { fetchStrategy: FetchStrategy.NETWORK_ONLY });
+  const onMissingRelation = (_propName, _propValue, _object, _variables, _data) => {
+    return query.query({}, { fetchStrategy: FetchStrategy.NETWORK_ONLY });
   };
 
   store.setConfig({ transformers: {
@@ -273,8 +273,8 @@ test('fetch missing reference in array', async () => {
     }
   };
   const query = new Query(client, null);
-  const onMissingRelation = async (_propName, _propValue, _object, _variables, _data) => {
-    await query.query({}, { fetchStrategy: FetchStrategy.NETWORK_ONLY });
+  const onMissingRelation = (_propName, _propValue, _object, _variables, _data) => {
+    return query.query({}, { fetchStrategy: FetchStrategy.NETWORK_ONLY });
   };
 
   store.setConfig({ transformers: {
