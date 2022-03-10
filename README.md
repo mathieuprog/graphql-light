@@ -24,6 +24,7 @@
   * [Derived queries](#derived-queries)
   * [Fetching strategies](#fetching-strategies)
   * [Simple network requests](#simple-network-requests)
+  * [Caching entities manually](#caching-entities-manually)
   * [Inspecting the cache](#inspecting-the-cache)
   * [Debug mode](#debug-mode)
 * [API](#api)
@@ -236,15 +237,14 @@ This allows to avoid fetching what has been previously fetched. If the authors h
 It is assumed that the Author with id `authorId` has already been stored in the cache by a previous query. If that is not the case, you may add a callback to the query to handle missing references:
 
 ```javascript
-const query = new Query(client, `...`);
+import { FetchStrategy } from 'graphql-light';
 
-const onMissingRelation = async (propName, propValue, _object, _variables, _data) => {
+query.setOnMissingRelation((propName, _propValue, _object, _variables, _data) => {
   switch (propName) {
     case 'authorId':
-      await otherQuery.query({}, { fetchStrategy: FetchStrategy.NETWORK_ONLY });
-      break;
+      return otherQuery.query({}, { fetchStrategy: FetchStrategy.NETWORK_ONLY });
   }
-};
+});
 ```
 
 You may also use the `setTransformer` function on a query to change the fetched data before processing it.
@@ -490,9 +490,22 @@ import client from './client';
 const promise = new NetworkRequest(client, `...`).execute(variables);
 ```
 
+### Caching entities manually
+
+```javascript
+import { store } from 'graphql-light';
+
+await store.store({ id: 'person1', __typename: 'Person', name: 'John' });
+
+await store.store(
+  { id: 'person1', __typename: 'Person', name: 'John' },
+  { onFetchEntity, onFetchArrayOfEntities, onMissingRelation }
+);
+```
+
 ### Inspecting the cache
 
-The `store` object provides some utility functions to inspect the cached data. The object is accessible globally, so you may call its functions from the Chrome Web Inspector.
+The `store` instance also provides some utility functions to inspect the cached data. The object is accessible globally, so you may call its functions from the Chrome Web Inspector.
 
 ```javascript
 store.getEntities()
