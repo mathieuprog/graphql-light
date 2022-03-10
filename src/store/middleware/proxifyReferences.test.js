@@ -22,9 +22,6 @@ test('proxify references', async () => {
         addressId: {
           type: 'Address',
           field: 'address',
-          async handleMissing(_addressId, _object) {
-            await query.query({}, { fetchStrategy: FetchStrategy.NETWORK_ONLY });
-          }
         }
       }
     }
@@ -58,13 +55,15 @@ test('proxify references', async () => {
 
 test('missing reference', async () => {
   store.initialize();
+
+  const onMissingRelation = (_propName, _propValue, _object, _variables, _data) => {};
+
   store.setConfig({ transformers: {
     Person: {
       references: {
         addressId: {
           type: 'Address',
-          field: 'address',
-          handleMissing() {}
+          field: 'address'
         }
       }
     }
@@ -82,7 +81,7 @@ test('missing reference', async () => {
     }
   });
 
-  const { denormalizedData: transformedData } = await proxifyReferences({ denormalizedData: person }, store);
+  const { denormalizedData: transformedData } = await proxifyReferences({ denormalizedData: person }, store, { onMissingRelation });
 
   expect(transformedData.contacts.dummy.address).toBeNull();
   expect(transformedData.contacts.dummy.addressId).toBeNull();
@@ -130,12 +129,13 @@ test('missing reference in array', async () => {
     street: 'Foo'
   });
 
+  const onMissingRelation = (_propName, _propValue, _object, _variables, _data) => {};
+
   store.setConfig({ transformers: {
     Person: {
       references: {
         addresses: {
-          type: 'Address',
-          handleMissing() {}
+          type: 'Address'
         }
       }
     }
@@ -152,7 +152,7 @@ test('missing reference in array', async () => {
     }
   });
 
-  const { denormalizedData: transformedData } = await proxifyReferences({ denormalizedData: person }, store);
+  const { denormalizedData: transformedData } = await proxifyReferences({ denormalizedData: person }, store, { onMissingRelation });
 
   expect(transformedData.contacts.dummy.addresses.length).toBe(1);
   expect(transformedData.contacts.dummy.addresses[0].id).toBe('address2');
@@ -213,16 +213,16 @@ test('fetch missing reference', async () => {
     }
   };
   const query = new Query(client, null);
+  const onMissingRelation = async (_propName, _propValue, _object, _variables, _data) => {
+    await query.query({}, { fetchStrategy: FetchStrategy.NETWORK_ONLY });
+  };
 
   store.setConfig({ transformers: {
     Person: {
       references: {
         addressId: {
           type: 'Address',
-          field: 'address',
-          async handleMissing(_addressId, _object) {
-            await query.query({}, { fetchStrategy: FetchStrategy.NETWORK_ONLY });
-          }
+          field: 'address'
         }
       }
     }
@@ -239,7 +239,7 @@ test('fetch missing reference', async () => {
     }
   });
 
-  const { denormalizedData: transformedData } = await proxifyReferences({ denormalizedData: person }, store);
+  const { denormalizedData: transformedData } = await proxifyReferences({ denormalizedData: person }, store, { onMissingRelation });
 
   expect(transformedData.contacts.dummy.addressId).toBe('address1');
   expect(person.contacts.dummy.addressId).toBe('address1');
@@ -273,15 +273,15 @@ test('fetch missing reference in array', async () => {
     }
   };
   const query = new Query(client, null);
+  const onMissingRelation = async (_propName, _propValue, _object, _variables, _data) => {
+    await query.query({}, { fetchStrategy: FetchStrategy.NETWORK_ONLY });
+  };
 
   store.setConfig({ transformers: {
     Person: {
       references: {
         addresses: {
-          type: 'Address',
-          async handleMissing(_addressId, _object) {
-            await query.query({}, { fetchStrategy: FetchStrategy.NETWORK_ONLY });
-          }
+          type: 'Address'
         }
       }
     }
@@ -298,7 +298,7 @@ test('fetch missing reference in array', async () => {
     }
   });
 
-  const { denormalizedData: transformedData } = await proxifyReferences({ denormalizedData: person }, store);
+  const { denormalizedData: transformedData } = await proxifyReferences({ denormalizedData: person }, store, { onMissingRelation });
 
   expect(transformedData.contacts.dummy.addresses.length).toBe(2);
   expect(transformedData.contacts.dummy.addresses[0].id).toBe('address1');

@@ -8,6 +8,7 @@ export default class Mutation {
     this.transformer = data => data;
     this.onFetchEntity = () => undefined;
     this.onFetchArrayOfEntities = () => undefined;
+    this.onMissingRelation = () => undefined;
   }
 
   setTransformer(transformer) {
@@ -22,6 +23,10 @@ export default class Mutation {
     this.onFetchArrayOfEntities = onFetchArrayOfEntities;
   }
 
+  setOnMissingRelation(onMissingRelation) {
+    this.onMissingRelation = onMissingRelation;
+  }
+
   async mutate(variables, callback = _ => true) {
     let data = await this.client.request(this.queryDocument, variables || {});
 
@@ -32,10 +37,14 @@ export default class Mutation {
     if (transformedData) {
       const onFetchEntity =
         (entity) => this.onFetchEntity(entity, variables, data);
-      const onFetchArrayOfEntities =
-        (propName, object) => this.setOnFetchArrayOfEntities(propName, object, variables, data);
 
-      await store.store(transformedData, { onFetchEntity, onFetchArrayOfEntities });
+      const onFetchArrayOfEntities =
+        (propName, object) => this.onFetchArrayOfEntities(propName, object, variables, data);
+
+      const onMissingRelation =
+        (propName, propValue, object) => this.query.onMissingRelation(propName, propValue, object, variables, data);
+
+      await store.store(transformedData, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation });
     }
 
     return data;

@@ -187,16 +187,10 @@ When we request entities from the server, we often want to apply transformations
 
 * transform a date string into a `Temporal` object;
 * transform a foreign key to the corresponding object;
-* mark an entity as to be deleted;
+* transform the structure of the fetched data;
 * etc.
 
-There are two ways to transform incoming data:
-
-1. by adding a transformer function to a specific query or mutation instance (via the `setTransformer` function).
-
-2. by adding global transformer functions as config to the store (via the `setConfig` function).
-
-In the example below, every incoming object with typename "Article" will have its `publishDate` data (received as a string from the server) converted to a `PlainDateTime` object.
+You may add a `transformers` key in the config object. The `transformers` prop holds an object like below:
 
 ```javascript
 import { store } from 'graphql-light';
@@ -211,6 +205,8 @@ store.setConfig({
   }
 });
 ```
+
+In the example above, every incoming object with typename `"Article"` will have its `publishDate` (received as a string from the server) converted into a `PlainDateTime` object.
 
 Another nice thing to do, is convert the foreign keys into objects, to allow chaining properties as if data is denormalized:
 
@@ -227,11 +223,7 @@ store.setConfig({
       references: {
         authorId: {
           type: 'Author',
-          field: 'author',
-          async handleMissing(authorId) {
-            await someQuery.query({},
-              { fetchStrategy: FetchStrategy.NETWORK_ONLY });
-          }
+          field: 'author'
         }
       }
     }
@@ -239,7 +231,23 @@ store.setConfig({
 });
 ```
 
-This also allows to avoid fetching what has been previously fetched. If the authors have been previously fetched, we now just specify that the authorId on an Article points to an Author. In the result of the query, a field author is added alongside authorId.
+This allows to avoid fetching what has been previously fetched. If the authors have been previously fetched, we now just specify that the authorId on an Article points to an Author. In the result of the query, a field `author` is added alongside the field `authorId`.
+
+It is assumed that the Author with id `authorId` has already been stored in the cache by a previous query. If that is not the case, you may add a callback to the query to handle missing references:
+
+```javascript
+const query = new Query(client, `...`);
+
+const onMissingRelation = async (propName, propValue, _object, _variables, _data) => {
+  switch (propName) {
+    case 'authorId':
+      await otherQuery.query({}, { fetchStrategy: FetchStrategy.NETWORK_ONLY });
+      break;
+  }
+};
+```
+
+You may also use the `setTransformer` function on a query to change the fetched data before processing it.
 
 ### Delete and update entities
 
@@ -554,6 +562,8 @@ store.setConfig({ debug: false });
 
 #### `setOptions(callback)`
 
+#### `setOnMissingRelation(callback)`
+
 #### `setResolver(resolver)`
 
 #### `setTransformer(transformer)`
@@ -577,6 +587,8 @@ store.setConfig({ debug: false });
 #### `setOnFetchArrayOfEntities(onFetchArrayOfEntities)`
 
 #### `setOnFetchEntity(onFetchEntity)`
+
+#### `setOnMissingRelation(callback)`
 
 #### `setTransformer(transformer)`
 

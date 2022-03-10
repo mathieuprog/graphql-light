@@ -83,7 +83,7 @@ function doNormalize(store, object, getObjectFromStore, callbacks, newEntities, 
     } else if (isArray(propValue)) {
       const array = propValue; // renaming for readability
 
-      let onFetchArray = callbacks?.onFetchArrayOfEntities?.(propName, object);
+      const onFetchArray = callbacks?.onFetchArrayOfEntities?.(propName, object);
 
       if (isArrayOfEntities(array) || onFetchArray) {
         array.forEach(entity => {

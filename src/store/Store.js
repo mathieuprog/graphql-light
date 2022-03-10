@@ -40,7 +40,7 @@ export default class Store {
     } =
       await pipeAsync(
         // pipefy(transformServerData, this),
-        pipefy(proxifyReferences, this),
+        pipefy(proxifyReferences, this, callbacks),
         pipefy(normalize, this, callbacks),
         pipefy(updateLinks, this),
         pipefy(refreshDenormalizedData, this),

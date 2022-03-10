@@ -161,7 +161,10 @@ export default class QueryForVars extends AbstractQueryForVars {
     const onFetchArrayOfEntities =
       (propName, object) => this.query.onFetchArrayOfEntities(propName, object, this.variables, data);
 
-    const { updatesToListenTo, denormalizedData } = await store.store(data, { onFetchEntity, onFetchArrayOfEntities });
+    const onMissingRelation =
+      (propName, propValue, object) => this.query.onMissingRelation(propName, propValue, object, this.variables, data);
+
+    const { updatesToListenTo, denormalizedData } = await store.store(data, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation });
     this.updatesToListenTo = updatesToListenTo;
 
     this.strategy.setFetchedData(denormalizedData);

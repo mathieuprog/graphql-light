@@ -13,6 +13,7 @@ export default class Query extends AbstractQuery {
     this.transformer = data => data;
     this.onFetchEntity = () => undefined;
     this.onFetchArrayOfEntities = () => undefined;
+    this.onMissingRelation = () => undefined;
     this.onStoreUpdate = () => undefined;
     this.queriesForVars = {};
     this.getOnUnobservedStrategy = _variables => OnUnobservedStrategy.PAUSE_UPDATING;
@@ -24,20 +25,16 @@ export default class Query extends AbstractQuery {
     this.dependentQueries = queries;
   }
 
-  setResolver(resolver) {
-    this.customResolver = resolver;
-  }
-
-  setTransformer(transformer) {
-    this.transformer = transformer;
-  }
-
   setOnFetchEntity(onFetchEntity) {
     this.onFetchEntity = onFetchEntity;
   }
 
   setOnFetchArrayOfEntities(onFetchArrayOfEntities) {
     this.onFetchArrayOfEntities = onFetchArrayOfEntities;
+  }
+
+  setOnMissingRelation(onMissingRelation) {
+    this.onMissingRelation = onMissingRelation;
   }
 
   setOnStoreUpdate(onStoreUpdate) {
@@ -50,6 +47,14 @@ export default class Query extends AbstractQuery {
 
   setOptions(callback) {
     this.getOptions = callback;
+  }
+
+  setResolver(resolver) {
+    this.customResolver = resolver;
+  }
+
+  setTransformer(transformer) {
+    this.transformer = transformer;
   }
 
   getQueryForVars(variables) {

@@ -1,19 +1,19 @@
 import { hasObjectProps, isArray, isObjectLiteral } from '../../utils';
 import createProxy from '../createProxy';
 
-export default async function proxifyReferences(result, store) {
+export default async function proxifyReferences(result, store, callbacks = {}) {
   if (!store.config.transformers) {
     return result;
   }
 
   let { denormalizedData } = result;
 
-  denormalizedData = await doProxifyReferences(denormalizedData, null, store);
+  denormalizedData = await doProxifyReferences(denormalizedData, null, store, callbacks);
 
   return { ...result, denormalizedData };
 }
 
-async function doProxifyReferences(data, entity, store) {
+async function doProxifyReferences(data, entity, store, callbacks) {
   if (isObjectLiteral(data)) {
     let object = { ...data };
 
@@ -34,7 +34,12 @@ async function doProxifyReferences(data, entity, store) {
         if (isArray(propValue)) {
           // if we do not specify the __typename, we assume the entity has been previously stored
           if (propValue.length > 0 && !propValue[0].__typename) {
-            const { type, ensureHasFields, handleMissing } = linkData;
+            const { type, ensureHasFields } = linkData;
+
+            let handleMissing = linkData.handleMissing;
+            if (callbacks?.onMissingRelation) {
+              handleMissing = (value, object) => callbacks?.onMissingRelation?.(propName, value, object);
+            }
 
             const incompleteEntities =
               propValue
@@ -77,7 +82,12 @@ async function doProxifyReferences(data, entity, store) {
             object[propName] = propValue.map(entity => createProxy(entity, store.getEntityById.bind(store)));
           }
         } else {
-          const { type, field, ensureHasFields, handleMissing } = linkData;
+          const { type, field, ensureHasFields } = linkData;
+
+          let handleMissing = linkData.handleMissing;
+          if (callbacks?.onMissingRelation) {
+            handleMissing = (value, object) => callbacks?.onMissingRelation?.(propName, value, object);
+          }
 
           // we have only the reference (e.g. we have `userId` field and no `user` field)
           if (!object[field]) {
@@ -109,7 +119,7 @@ async function doProxifyReferences(data, entity, store) {
           }
         }
       } else {
-        object[propName] = await doProxifyReferences(propValue, entity, store);
+        object[propName] = await doProxifyReferences(propValue, entity, store, callbacks);
       }
     }
 
@@ -118,7 +128,7 @@ async function doProxifyReferences(data, entity, store) {
 
   if (isArray(data)) {
     let array = [...data];
-    array =  await Promise.all(array.map(element => doProxifyReferences(element, entity, store)));
+    array =  await Promise.all(array.map(element => doProxifyReferences(element, entity, store, callbacks)));
 
     return array;
   }
