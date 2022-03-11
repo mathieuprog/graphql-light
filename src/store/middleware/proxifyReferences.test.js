@@ -21,7 +21,15 @@ test('proxify references', async () => {
       references: {
         addressId: {
           type: 'Address',
-          field: 'address',
+          field: 'address'
+        },
+        phoneId: {
+          type: 'Phone',
+          field: 'phone'
+        },
+        addressIds: {
+          type: 'Address',
+          field: 'addresses'
         }
       }
     }
@@ -33,7 +41,9 @@ test('proxify references', async () => {
     name: 'Mathieu',
     contacts: {
       dummy: {
-        addressId: 'address1'
+        phoneId: null,
+        addressId: 'address1',
+        addressIds: ['address1']
       }
     }
   });
@@ -49,8 +59,52 @@ test('proxify references', async () => {
   expect(isEntityProxy(transformedData.contacts.dummy.address)).toBeTruthy();
   expect(person.contacts.dummy.address).toBeUndefined();
 
+  expect(transformedData.contacts.dummy.addresses).toBeTruthy();
+  expect(transformedData.contacts.dummy.addresses.length).toBe(1);
+  expect(transformedData.contacts.dummy.addresses[0].id).toBe('address1');
+  expect(person.contacts.dummy.addresses).toBeUndefined();
+
   expect(transformedData.contacts.dummy.addressId).toBe('address1');
   expect(person.contacts.dummy.addressId).toBe('address1');
+
+  expect(transformedData.contacts.dummy.phone).toBeNull();
+  expect(person.contacts.dummy.phone).toBeUndefined();
+});
+
+test('empty arrays', async () => {
+  store.setConfig({ transformers: {
+    Person: {
+      references: {
+        phones: {
+          type: 'Phone'
+        },
+        addressIds: {
+          type: 'Address',
+          field: 'addresses'
+        }
+      }
+    }
+  } });
+
+  const person = deepFreeze({
+    id: 'person1',
+    __typename: 'Person',
+    name: 'Mathieu',
+    phones: [],
+    addressIds: []
+  });
+
+  const { denormalizedData: transformedData } = await proxifyReferences({ denormalizedData: person }, store);
+
+  expect(transformedData.addressIds).toEqual([]);
+  expect(person.addressIds).toEqual([]);
+  expect(transformedData.phones).toEqual([]);
+  expect(person.phones).toEqual([]);
+  expect(transformedData.addresses).toEqual([]);
+  expect(person.addresses).toBeUndefined();
+
+  expect(transformedData.undefined).toBeUndefined();
+  expect(person.undefined).toBeUndefined();
 });
 
 test('missing reference', async () => {

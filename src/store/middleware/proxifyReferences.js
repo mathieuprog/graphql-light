@@ -1,4 +1,10 @@
-import { hasObjectProps, isArray, isObjectLiteral } from '../../utils';
+import {
+  hasObjectProps,
+  isArray,
+  isArrayOfObjectLiterals,
+  isEmptyArray,
+  isObjectLiteral
+} from '../../utils';
 import createProxy from '../createProxy';
 
 export default async function proxifyReferences(result, store, callbacks = {}) {
@@ -30,16 +36,17 @@ async function doProxifyReferences(data, entity, store, callbacks) {
       }
 
       const linkData = getLinkData(propName);
-      if (linkData && propValue && (!isArray(propValue) || !propValue[0].__typename)) {
-        // if we do not specify the __typename (not an array of entities), we assume the entities have been previously stored
-        if (isArray(propValue)) {
+      if (linkData) {
+        if (isEmptyArray(propValue)) {
+          const { field } = linkData;
+          if (field && !object[field]) {
+            object[field] = [];
+          }
+        } else if (isArray(propValue) && propValue.length > 0 && propValue[0].__typename) {
+          object[propName] = await doProxifyReferences(propValue, entity, store, callbacks);
+        } else if (isArrayOfObjectLiterals(propValue)) {
           if (propValue.length > 0) {
             const { type, ensureHasFields } = linkData;
-
-            let handleMissing = linkData.handleMissing;
-            if (callbacks?.onMissingRelation) {
-              handleMissing = (value, object) => callbacks?.onMissingRelation?.(propName, value, object);
-            }
 
             const incompleteEntities =
               propValue
@@ -50,6 +57,11 @@ async function doProxifyReferences(data, entity, store, callbacks) {
                 .map(({ id }) => id);
 
             if (incompleteEntities.length > 0) {
+              let handleMissing = linkData.handleMissing;
+              if (callbacks?.onMissingRelation) {
+                handleMissing = (value, object) => callbacks?.onMissingRelation?.(propName, value, object);
+              }
+
               if (handleMissing) {
                 await handleMissing(incompleteEntities, entity);
 
@@ -75,46 +87,93 @@ async function doProxifyReferences(data, entity, store, callbacks) {
               propValue = propValue.filter(({ id }) => store.getEntityById(id));
             }
 
-            if (propValue.length > 0 && !propValue[0].__typename) {
-              propValue = propValue.map(entity => ({ ...entity, __typename: type }));
+            object[propName] = propValue.map(({ id }) => createProxy({ id, __typename: type }, store.getEntityById.bind(store)));
+          }
+
+        // if we do not specify the __typename (not an array of entities), we assume the entities have been previously stored
+        } else if (isArray(propValue)) {
+          const { type, field, ensureHasFields } = linkData;
+
+          if (!object[field]) {
+            const incompleteEntities =
+              propValue
+                .filter(id => {
+                  const referencedEntity = store.getEntityById(id);
+                  return !referencedEntity || (ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields));
+                });
+
+            if (incompleteEntities.length > 0) {
+              let handleMissing = linkData.handleMissing;
+              if (callbacks?.onMissingRelation) {
+                handleMissing = (value, object) => callbacks?.onMissingRelation?.(propName, value, object);
+              }
+
+              if (handleMissing) {
+                await handleMissing(incompleteEntities, entity);
+
+                if (ensureHasFields) {
+                  propValue
+                    .forEach(id => {
+                      const referencedEntity = store.getEntityById(id);
+                      if (referencedEntity && !hasObjectProps(referencedEntity, ensureHasFields)) {
+                        throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields}`);
+                      }
+                    });
+                }
+              } else if (ensureHasFields) {
+                propValue
+                  .forEach(id => {
+                    const referencedEntity = store.getEntityById(id);
+                    if (referencedEntity && !hasObjectProps(referencedEntity, ensureHasFields)) {
+                      throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields} (no \`handleMissing\` callback)`);
+                    }
+                  });
+              }
+
+              propValue = propValue.filter(id => store.getEntityById(id));
             }
 
-            object[propName] = propValue.map(entity => createProxy(entity, store.getEntityById.bind(store)));
+            object[field] = propValue.map(id => createProxy({ id, __typename: type }, store.getEntityById.bind(store)));
           }
         } else {
           const { type, field, ensureHasFields } = linkData;
 
-          let handleMissing = linkData.handleMissing;
-          if (callbacks?.onMissingRelation) {
-            handleMissing = (value, object) => callbacks?.onMissingRelation?.(propName, value, object);
-          }
-
           // we have only the reference (e.g. we have `userId` field and no `user` field)
           if (!object[field]) {
-            let referencedEntity = store.getEntityById(propValue);
+            if (!propValue) {
+              object[field] = null;
+            }
+            else {
+              let referencedEntity = store.getEntityById(propValue);
 
-            if (!referencedEntity || ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields)) {
-              if (handleMissing) {
-                await handleMissing(propValue, entity);
+              if (!referencedEntity || ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields)) {
+                let handleMissing = linkData.handleMissing;
+                if (callbacks?.onMissingRelation) {
+                  handleMissing = (value, object) => callbacks?.onMissingRelation?.(propName, value, object);
+                }
 
-                referencedEntity = store.getEntityById(propValue);
+                if (handleMissing) {
+                  await handleMissing(propValue, entity);
 
-                if (!referencedEntity) {
+                  referencedEntity = store.getEntityById(propValue);
+
+                  if (!referencedEntity) {
+                    object[field] = null;
+                    object[propName] = null;
+                  } else if (ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields)) {
+                    throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields}`);
+                  } else {
+                    object[field] = createProxy({ id: propValue, __typename: type }, store.getEntityById.bind(store));
+                  }
+                } else if (ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields)) {
+                  throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields} (no \`handleMissing\` callback)`);
+                } else {
                   object[field] = null;
                   object[propName] = null;
-                } else if (ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields)) {
-                  throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields}`);
-                } else {
-                  object[field] = createProxy({ id: propValue, __typename: type }, store.getEntityById.bind(store));
                 }
-              } else if (ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields)) {
-                throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields} (no \`handleMissing\` callback)`);
               } else {
-                object[field] = null;
-                object[propName] = null;
+                object[field] = createProxy({ id: propValue, __typename: type }, store.getEntityById.bind(store));
               }
-            } else {
-              object[field] = createProxy({ id: propValue, __typename: type }, store.getEntityById.bind(store));
             }
           }
         }
