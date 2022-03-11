@@ -5,6 +5,7 @@ import updateLinks from './middleware/updateLinks';
 import refreshDenormalizedData from './middleware/refreshDenormalizedData';
 import notifySubscribers from './middleware/notifySubscribers';
 import checkMissingLinks from './middleware/checkMissingLinks';
+import checkInvalidReferences from './middleware/checkInvalidReferences';
 import { isObjectSubset } from '../utils';
 import { pipeAsync, pipefy, pipefyIf } from 'pipe-pipefy';
 
@@ -45,7 +46,8 @@ export default class Store {
         pipefy(updateLinks, this),
         pipefy(refreshDenormalizedData, this),
         pipefy(notifySubscribers, this),
-        pipefyIf(this.config.debug, checkMissingLinks, this)
+        pipefyIf(this.config.debug, checkMissingLinks, this),
+        pipefyIf(this.config.debug, checkInvalidReferences, this)
       )({ denormalizedData }));
 
     return {
