@@ -74,6 +74,8 @@ const denormalizedData = deepFreeze({ foo: { // test immutability
 
 beforeEach(() => {
   store.initialize();
+
+  store.setConfig({ debug: true });
 });
 
 afterEach(() => {

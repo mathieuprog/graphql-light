@@ -73,6 +73,8 @@ const denormalizedData = deepFreeze({
 beforeEach(() => {
   store.initialize();
 
+  store.setConfig({ debug: true });
+
   const onFetchArrayOfEntities = (propName, object) => {
     switch (propName) {
       case 'articles':

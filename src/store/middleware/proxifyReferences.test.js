@@ -14,6 +14,9 @@ const denormalizedData = deepFreeze({
 
 beforeEach(() => {
   store.initialize();
+
+  store.setConfig({ debug: true });
+
   return store.store(denormalizedData);
 });
 
@@ -117,6 +120,8 @@ test('empty arrays', async () => {
 test('missing reference', async () => {
   store.initialize();
 
+  store.setConfig({ debug: true });
+
   const onMissingRelation = (_propName, _propValue, _object, _variables, _data) => {};
 
   store.setConfig({ transformers: {
@@ -151,6 +156,9 @@ test('missing reference', async () => {
 
 test('missing reference and no handleMissing callback', async () => {
   store.initialize();
+
+  store.setConfig({ debug: true });
+
   store.setConfig({ transformers: {
     Person: {
       references: {
@@ -183,6 +191,8 @@ test('missing reference and no handleMissing callback', async () => {
 
 test('missing reference in array', async () => {
   store.initialize();
+
+  store.setConfig({ debug: true });
 
   await store.store({
     id: 'address2',
@@ -224,6 +234,8 @@ test('missing reference in array', async () => {
 test('missing reference in array no handleMissing callback', async () => {
   store.initialize();
 
+  store.setConfig({ debug: true });
+
   await store.store({
     id: 'address2',
     __typename: 'Address',
@@ -261,6 +273,8 @@ test('missing reference in array no handleMissing callback', async () => {
 
 test('fetch missing reference', async () => {
   store.initialize();
+
+  store.setConfig({ debug: true });
 
   await store.store({});
 
@@ -317,6 +331,8 @@ test('fetch missing reference', async () => {
 
 test('fetch missing reference in array', async () => {
   store.initialize();
+
+  store.setConfig({ debug: true });
 
   await store.store({
     id: 'address2',

@@ -16,7 +16,9 @@ const denormalizedData = deepFreeze({
 
 beforeEach(() => {
   store.initialize();
+
   store.setConfig({ debug: true });
+
   return store.store(denormalizedData);
 });
 
