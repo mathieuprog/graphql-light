@@ -24,8 +24,16 @@ function doCheckInvalidReferences(data, entities) {
       if (match) {
         const field = match[1];
 
-        if (!data[field]) {
+        if (data[field] === undefined) {
           throw new Error(`found field \`${propName}\` but no field \`${field}\``);
+        }
+
+        if (data[field] === null && propValue === null) {
+          continue;
+        }
+
+        if (data[field] === null || propValue === null) {
+          throw new Error(`\`${propName}\` has id but field \`${field}\` is null`);
         }
 
         if (!data[field].id) {
@@ -49,8 +57,12 @@ function doCheckInvalidReferences(data, entities) {
           }
         }
 
-        if (!data[field]) {
+        if (data[field] === undefined) {
           throw new Error(`found field \`${propName}\` but no field \`${field}\``);
+        }
+
+        if (data[field] === null) {
+          throw new Error(`field \`${propName}\` has ids but field \`${field}\` is null`);
         }
 
         if (!isArray(data[field])) {

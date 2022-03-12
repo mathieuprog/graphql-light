@@ -3,6 +3,8 @@ import UpdateType from '../../constants/UpdateType';
 import Query from '../Query';
 import { deepFreeze } from '../../utils';
 import { jest } from '@jest/globals';
+import checkMissingLinks from '../../store/middleware/checkMissingLinks';
+import checkInvalidReferences from '../../store/middleware/checkInvalidReferences';
 
 const denormalizedData = deepFreeze({
   id: 'person1',
@@ -89,6 +91,11 @@ beforeEach(() => {
   };
 
   store.store(denormalizedData, { onFetchArrayOfEntities });
+});
+
+afterEach(() => {
+  expect(checkMissingLinks({}, store)).toEqual({});
+  expect(checkInvalidReferences({}, store)).toEqual({});
 });
 
 describe('user resolver', () => {

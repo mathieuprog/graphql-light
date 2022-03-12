@@ -4,6 +4,8 @@ import DerivedQuery from './DerivedQuery';
 import FetchStrategy from '../constants/FetchStrategy';
 import { deepFreeze } from '../utils';
 import { jest } from '@jest/globals';
+import checkMissingLinks from '../store/middleware/checkMissingLinks';
+import checkInvalidReferences from '../store/middleware/checkInvalidReferences';
 
 const denormalizedData = deepFreeze({
   id: 'person1',
@@ -68,7 +70,7 @@ const denormalizedData = deepFreeze({
   }
 });
 
-beforeEach(async () => {
+beforeEach(() => {
   store.initialize();
 
   const onFetchArrayOfEntities = (propName, object) => {
@@ -84,7 +86,12 @@ beforeEach(async () => {
     }
   };
 
-  await store.store(denormalizedData, { onFetchArrayOfEntities });
+  return store.store(denormalizedData, { onFetchArrayOfEntities });
+});
+
+afterEach(() => {
+  expect(checkMissingLinks({}, store)).toEqual({});
+  expect(checkInvalidReferences({}, store)).toEqual({});
 });
 
 test('DerivedQuery', async () => {

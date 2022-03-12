@@ -44,7 +44,7 @@ export default function updateLinks(result, store) {
 
     nestedInEntityIds.forEach(nestedInEntityId => {
       if (entities[nestedInEntityId]) {
-        entities[nestedInEntityId] = removeDeletedEntity(entities[nestedInEntityId], deletedEntityId, updates);
+        entities[nestedInEntityId] = removeDeletedEntity(entities[nestedInEntityId], deletedEntityId, updates, store);
       }
     });
 
@@ -57,54 +57,6 @@ export default function updateLinks(result, store) {
   store.links = links;
 
   return { ...result, updates };
-}
-
-function removeDeletedEntity(entity, deletedEntityId, updates) {
-  entity = { ...entity };
-
-  for (let [propName, propValue] of Object.entries(entity)) {
-    entity[propName] = doRemoveDeletedEntity(propValue, propName, entity, deletedEntityId, updates);
-  }
-
-  return entity;
-}
-
-function doRemoveDeletedEntity(data, propName, entity, deletedEntityId, updates) {
-  if (isNullOrUndefined(data)) {
-    return data;
-  }
-
-  if (isObjectLiteral(data)) {
-    if (isEntity(data)) {
-      if (data.id === deletedEntityId) {
-        updates.push({ type: UpdateType.UPDATE_PROP, entity, propName });
-        return null;
-      }
-
-      return data;
-    }
-
-    data = { ...data };
-
-    for (let [propName, propValue] of Object.entries(data)) {
-      data[propName] = doRemoveDeletedEntity(propValue, propName, entity, deletedEntityId, updates);
-    }
-
-    return data;
-  }
-
-  if (isArray(data)) {
-    if (isArrayOfEntities(data)) {
-      if (data.some(entity => entity.id === deletedEntityId)) {
-        updates.push({ type: UpdateType.UPDATE_PROP, entity, propName });
-        return data.filter(entity => entity.id !== deletedEntityId);
-      }
-    }
-
-    return data.map(element => doRemoveDeletedEntity(element, propName, entity, deletedEntityId, updates));
-  }
-
-  return data;
 }
 
 function doUpdateLinks(data, nestedEntities = []) {
@@ -133,4 +85,96 @@ function doUpdateLinks(data, nestedEntities = []) {
   }
 
   return nestedEntities;
+}
+
+function getReferenceField(entity, propName, store) {
+  const references = store.config.transformers[entity.__typename]?.references ?? {};
+  return Object.keys(references).find(key => references[key].field === propName);
+}
+
+function getFunCleanReferenceField(entity, object, propName, value, store) {
+  if (isEntity(value)) {
+    return (newValue) => {
+      if (newValue === null) {
+        const referenceField = getReferenceField(entity, propName, store);
+        if (referenceField) {
+          object[referenceField] = null;
+        }
+      }
+    }
+  } else {
+    return () => {};
+  }
+}
+
+function getFunCleanArrayOfReferencesField(entity, object, propName, value, store) {
+  if (isArrayOfEntities(value)) {
+    return (newValue) => {
+      const referenceField = getReferenceField(entity, propName, store);
+      if (referenceField) {
+        object[referenceField] = newValue;
+      }
+    }
+  } else {
+    return () => {};
+  }
+}
+
+function removeDeletedEntity(entity, deletedEntityId, updates, store) {
+  entity = { ...entity };
+
+  for (let [propName, propValue] of Object.entries(entity)) {
+    const fun = getFunCleanReferenceField(entity, entity, propName, propValue, store);
+
+    entity[propName] = doRemoveDeletedEntity(propValue, propName, entity, entity, deletedEntityId, updates, store);
+
+    fun(entity[propName]);
+  }
+
+  return entity;
+}
+
+function doRemoveDeletedEntity(data, propName, entity, object, deletedEntityId, updates, store) {
+  if (isNullOrUndefined(data)) {
+    return data;
+  }
+
+  if (isObjectLiteral(data)) {
+    if (isEntity(data)) {
+      if (data.id === deletedEntityId) {
+        updates.push({ type: UpdateType.UPDATE_PROP, entity, propName });
+        return null;
+      }
+
+      return data;
+    }
+
+    data = { ...data };
+
+    for (let [propName, propValue] of Object.entries(data)) {
+      const fun = getFunCleanReferenceField(entity, data, propName, propValue, store);
+
+      data[propName] = doRemoveDeletedEntity(propValue, propName, entity, data, deletedEntityId, updates, store);
+
+      fun(data[propName]);
+    }
+
+    return data;
+  }
+
+  if (isArray(data)) {
+    if (isArrayOfEntities(data)) {
+      if (data.some(entity => entity.id === deletedEntityId)) {
+        const fun = getFunCleanArrayOfReferencesField(entity, object, propName, data, store);
+        fun(data.filter(entity => entity.id !== deletedEntityId).map(({ id }) => id));
+
+        updates.push({ type: UpdateType.UPDATE_PROP, entity, propName });
+        return data.filter(entity => entity.id !== deletedEntityId);
+      }
+    }
+
+    return data.map(element => doRemoveDeletedEntity(element, propName, entity, element, deletedEntityId, updates, store));
+  }
+
+  return data;
 }

@@ -1,6 +1,8 @@
 import QueryCache from './QueryCache';
 import { isObjectSubset } from '../../utils';
 import { deleteNestedProp, setNestedProp } from 'dynamic-props-immutable';
+import checkMissingLinks from '../../store/middleware/checkMissingLinks';
+import checkInvalidReferences from '../../store/middleware/checkInvalidReferences';
 
 const denormalizedData = {
   id: 'person1',
@@ -83,9 +85,14 @@ const onFetchArrayOfEntities = (propName, object) => {
   }
 };
 
-beforeEach(async () => {
+beforeEach(() => {
   store.initialize();
-  await store.store(denormalizedData, { onFetchArrayOfEntities });
+  return store.store(denormalizedData, { onFetchArrayOfEntities });
+});
+
+afterEach(() => {
+  expect(checkMissingLinks({}, store)).toEqual({});
+  expect(checkInvalidReferences({}, store)).toEqual({});
 });
 
 test('applyUpdate', () => {

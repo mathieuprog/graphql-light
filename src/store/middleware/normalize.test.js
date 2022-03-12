@@ -1,6 +1,8 @@
 import normalize, { removeEntityById, updateEntity } from './normalize';
 import store from '../index';
 import { deepFreeze } from '../../utils';
+import checkMissingLinks from './checkMissingLinks';
+import checkInvalidReferences from './checkInvalidReferences';
 
 const denormalizedData = deepFreeze({
   id: 'person1',
@@ -103,7 +105,7 @@ const denormalizedData = deepFreeze({
   arrayOfPrimitives: [4, 2]
 });
 
-beforeEach(async () => {
+beforeEach(() => {
   store.initialize();
 
   const onFetchArrayOfEntities = (propName, object) => {
@@ -119,20 +121,25 @@ beforeEach(async () => {
     }
   };
 
-  await store.store(denormalizedData, { onFetchArrayOfEntities });
+  return store.store(denormalizedData, { onFetchArrayOfEntities });
 });
 
-test('normalize and store', () => {
+afterEach(() => {
+  expect(checkMissingLinks({}, store)).toEqual({});
+  expect(checkInvalidReferences({}, store)).toEqual({});
+});
+
+test('normalize and store', async () => {
   const entity = {
     id: 'person1',
     __typename: 'Person',
     age: 37,
-    name: 'John', // update
+    name: 'John',
     articles: [
       {
         id: 'article1',
         __typename: 'Article',
-        title: 'My article', // update
+        title: 'My article',
         comments: [
           {
             id: 'comment1',
@@ -164,7 +171,7 @@ test('normalize and store', () => {
         id: 'article4',
         __typename: 'Article',
         comments: [],
-        title: 'Another article' // update
+        title: 'Another article'
       }
     ],
     contacts: {
@@ -248,7 +255,7 @@ test('normalize and store', () => {
 
   const entities = { ...store.getEntities() };
 
-  normalize({ denormalizedData: entity }, store, { onFetchEntity, onFetchArrayOfEntities });
+  await store.store(entity, { onFetchEntity, onFetchArrayOfEntities });
 
   const newEntities = store.getEntities();
 

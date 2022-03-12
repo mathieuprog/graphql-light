@@ -5,6 +5,8 @@ import { deepFreeze } from '../utils';
 import { jest } from '@jest/globals';
 import { Temporal } from '@js-temporal/polyfill';
 import { removeEntityById } from '../store/middleware/normalize';
+import checkMissingLinks from '../store/middleware/checkMissingLinks';
+import checkInvalidReferences from '../store/middleware/checkInvalidReferences';
 
 const denormalizedData = deepFreeze({
   id: 'person1',
@@ -69,7 +71,7 @@ const denormalizedData = deepFreeze({
   }
 });
 
-beforeEach(async () => {
+beforeEach(() => {
   store.initialize();
 
   const onFetchArrayOfEntities = (propName, object) => {
@@ -85,7 +87,12 @@ beforeEach(async () => {
     }
   };
 
-  await store.store(denormalizedData, { onFetchArrayOfEntities });
+  return store.store(denormalizedData, { onFetchArrayOfEntities });
+});
+
+afterEach(() => {
+  expect(checkMissingLinks({}, store)).toEqual({});
+  expect(checkInvalidReferences({}, store)).toEqual({});
 });
 
 test('Query', async () => {

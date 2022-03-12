@@ -1,6 +1,8 @@
 import { removeEntityById, updateEntity } from './middleware/normalize';
 import store from './index';
 import { areArraysEqual, deepFreeze } from '../utils';
+import checkMissingLinks from './middleware/checkMissingLinks';
+import checkInvalidReferences from './middleware/checkInvalidReferences';
 
 const denormalizedData = deepFreeze({
   id: 'person1',
@@ -133,6 +135,11 @@ beforeEach(async () => {
       }
     ]
   }, { onFetchArrayOfEntities });
+});
+
+afterEach(() => {
+  expect(checkMissingLinks({}, store)).toEqual({});
+  expect(checkInvalidReferences({}, store)).toEqual({});
 });
 
 test('collect updates', async () => {

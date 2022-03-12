@@ -3,6 +3,8 @@ import store from '../index';
 import { deepFreeze, isEntityProxy } from '../../utils';
 import Query from '../../query/Query';
 import FetchStrategy from '../../constants/FetchStrategy';
+import checkMissingLinks from './checkMissingLinks';
+import checkInvalidReferences from './checkInvalidReferences';
 
 const denormalizedData = deepFreeze({
   id: 'address1',
@@ -10,9 +12,14 @@ const denormalizedData = deepFreeze({
   street: 'Foo'
 });
 
-beforeEach(async () => {
+beforeEach(() => {
   store.initialize();
-  await store.store(denormalizedData);
+  return store.store(denormalizedData);
+});
+
+afterEach(() => {
+  expect(checkMissingLinks({}, store)).toEqual({});
+  expect(checkInvalidReferences({}, store)).toEqual({});
 });
 
 test('proxify references', async () => {

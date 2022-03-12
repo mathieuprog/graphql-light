@@ -2,6 +2,7 @@ import checkMissingLinks from './checkMissingLinks';
 import store from '../index';
 import { deepFreeze } from '../../utils';
 import createProxy from '../createProxy';
+import checkInvalidReferences from './checkInvalidReferences';
 
 const denormalizedData = deepFreeze({
   id: 'person1',
@@ -13,10 +14,14 @@ const denormalizedData = deepFreeze({
   }
 });
 
-beforeEach(async () => {
+beforeEach(() => {
   store.initialize();
   store.setConfig({ debug: true });
-  await store.store(denormalizedData);
+  return store.store(denormalizedData);
+});
+
+afterEach(() => {
+  expect(checkInvalidReferences({}, store)).toEqual({});
 });
 
 test('no missing entity', () => {

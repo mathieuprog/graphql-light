@@ -1,6 +1,8 @@
 import store from './index';
 import { deepFreeze, isArray } from '../utils';
 import { jest } from '@jest/globals';
+import checkMissingLinks from './middleware/checkMissingLinks';
+import checkInvalidReferences from './middleware/checkInvalidReferences';
 
 const denormalizedData = deepFreeze({ foo: { // test immutability
   id: 'person1',
@@ -74,6 +76,10 @@ beforeEach(() => {
   store.initialize();
 });
 
+afterEach(() => {
+  expect(checkMissingLinks({}, store)).toEqual({});
+  expect(checkInvalidReferences({}, store)).toEqual({});
+});
 
 const onFetchEntity = _normalizedEntity => {
 };
