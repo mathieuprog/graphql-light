@@ -87,39 +87,6 @@ function doUpdateLinks(data, nestedEntities = []) {
   return nestedEntities;
 }
 
-function getReferenceField(entity, propName, store) {
-  const references = store.config.transformers[entity.__typename]?.references ?? {};
-  return Object.keys(references).find(key => references[key].field === propName);
-}
-
-function getFunCleanReferenceField(entity, object, propName, value, store) {
-  if (isEntity(value)) {
-    return (newValue) => {
-      if (newValue === null) {
-        const referenceField = getReferenceField(entity, propName, store);
-        if (referenceField) {
-          object[referenceField] = null;
-        }
-      }
-    }
-  } else {
-    return () => {};
-  }
-}
-
-function getFunCleanArrayOfReferencesField(entity, object, propName, value, store) {
-  if (isArrayOfEntities(value)) {
-    return (newValue) => {
-      const referenceField = getReferenceField(entity, propName, store);
-      if (referenceField) {
-        object[referenceField] = newValue;
-      }
-    }
-  } else {
-    return () => {};
-  }
-}
-
 function removeDeletedEntity(entity, deletedEntityId, updates, store) {
   entity = { ...entity };
 
@@ -165,11 +132,12 @@ function doRemoveDeletedEntity(data, propName, entity, object, deletedEntityId, 
   if (isArray(data)) {
     if (isArrayOfEntities(data)) {
       if (data.some(entity => entity.id === deletedEntityId)) {
-        const fun = getFunCleanArrayOfReferencesField(entity, object, propName, data, store);
-        fun(data.filter(entity => entity.id !== deletedEntityId).map(({ id }) => id));
+        data = data.filter(entity => entity.id !== deletedEntityId);
+        cleanArrayOfReferencesField(entity, object, propName, data.map(({ id }) => id), store);
 
         updates.push({ type: UpdateType.UPDATE_PROP, entity, propName });
-        return data.filter(entity => entity.id !== deletedEntityId);
+
+        return data;
       }
     }
 
@@ -177,4 +145,31 @@ function doRemoveDeletedEntity(data, propName, entity, object, deletedEntityId, 
   }
 
   return data;
+}
+
+function getReferenceField(entity, propName, store) {
+  const references = store.config.transformers[entity.__typename]?.references ?? {};
+  return Object.keys(references).find(key => references[key].field === propName);
+}
+
+function getFunCleanReferenceField(entity, object, propName, value, store) {
+  if (isEntity(value)) {
+    return (newValue) => {
+      if (newValue === null) {
+        const referenceField = getReferenceField(entity, propName, store);
+        if (referenceField) {
+          object[referenceField] = null;
+        }
+      }
+    }
+  } else {
+    return () => {};
+  }
+}
+
+function cleanArrayOfReferencesField(entity, object, propName, value, store) {
+  const referenceField = getReferenceField(entity, propName, store);
+  if (referenceField) {
+    object[referenceField] = value;
+  }
 }
