@@ -1,8 +1,8 @@
-import { removeEntityById, updateEntity } from './middleware/normalize';
-import store from './index';
-import { areArraysEqual, deepFreeze } from '../utils';
-import checkMissingLinks from './middleware/checkMissingLinks';
-import checkInvalidReferences from './middleware/checkInvalidReferences';
+import { removeEntityById, updateEntity } from './normalize';
+import store from '../index';
+import { areArraysEqual, deepFreeze } from '../../utils';
+import checkMissingLinks from './checkMissingLinks';
+import checkInvalidReferences from './checkInvalidReferences';
 
 const denormalizedData = deepFreeze({
   id: 'person1',
