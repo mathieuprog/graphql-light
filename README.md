@@ -32,13 +32,15 @@
 
 ## Why GraphQL Light?
 
-`graphql-light` was written for three main reasons that differentiates it from other GraphQL clients:
+`graphql-light` was written for a few main reasons that differentiates it from other GraphQL clients:
 
 1. Cached entities are updated through explicit code written by the user; the user has full control over the caching, no magic involved.
 
 2. Cached entities are normalized, but the user can seamlessly access their nested entities (as if data is denormalized) with the use of proxies behind the scenes.
 
-3. Queries can be derived from other queries.
+3. If it is assumed that a nested entity has already been fetched, only the reference (foreign key) can be requested in the user's GraphQL document. A field with the nested entity will be added by the library alongside the reference. This saves a lot of SQL JOINs.
+
+4. Queries may be derived from other queries.
 
 These features will become more clear throughout the reading of this documentation.
 
