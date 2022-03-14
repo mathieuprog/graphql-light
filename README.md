@@ -247,6 +247,21 @@ query.setOnMissingRelation((propName, _propValue, _object, _variables, _data) =>
 });
 ```
 
+For arrays of references, you may either work with an array of ids or an array of objects containing only ids. Respectively, the config will look like:
+
+```javascript
+authorIds: {
+  type: 'Author',
+  field: 'authors'
+}
+```
+
+```javascript
+authors: {
+  type: 'Author'
+}
+```
+
 You may also use the `setTransformer` function on a query to change the fetched data before processing it.
 
 ### Delete and update entities
