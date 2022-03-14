@@ -211,7 +211,7 @@ store.setConfig({
 
 In the example above, every incoming object with typename `"Article"` will have its `publishDate` (received as a string from the server) converted into a `PlainDateTime` object.
 
-Another nice thing to do, is convert the foreign keys into objects, to allow chaining properties as if data is denormalized:
+Another nice thing to do, is to convert the foreign keys into objects, to allow chaining properties as if data is denormalized:
 
 ```javascript
 import { FetchStrategy } from 'graphql-light';
@@ -234,7 +234,7 @@ store.setConfig({
 });
 ```
 
-This allows to avoid fetching what has been previously fetched. If the authors have been previously fetched, we now just specify that the authorId on an Article points to an Author. In the result of the query, a field `author` is added alongside the field `authorId`.
+Not only does this allow chaining on nested entities' properties, it also allows to avoid fetching what has been previously fetched. If the authors have been previously fetched, we now just specify that the authorId on an Article points to an Author. In the result of the query, a field `author` is added alongside the field `authorId`.
 
 It is assumed that the Author with id `authorId` has already been stored in the cache by a previous query. If that is not the case, you may add a callback to the query to handle missing references:
 
@@ -556,7 +556,7 @@ For each of these functions, the `subsetEntities` parameter is optional. If omit
 
 ### Debug mode
 
-By default, the debug mode is on while the lib is in alpha, and it is recommended to keep it on. For now, the debug mode will only check the integrity of the store after updates.
+By default, the debug mode is on while the lib is in alpha, and it is recommended to keep it on. The debug mode checks the integrity of the store after every update.
 
 ```javascript
 import { store } from 'graphql-light';
