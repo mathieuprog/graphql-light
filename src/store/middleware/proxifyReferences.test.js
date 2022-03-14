@@ -40,25 +40,74 @@ test('proxify references', async () => {
         addressIds: {
           type: 'Address',
           field: 'addresses'
+        },
+        countryId: {
+          type: 'Country',
+          field: 'country'
+        },
+        countryIds: {
+          type: 'Country',
+          field: 'countries'
+        },
+        friendIds: {
+          type: 'Friend',
+          field: 'friends'
+        },
+        typeId: {
+          type: 'Type',
+          field: 'type'
+        },
+        accountIds: {
+          type: 'Account',
+          field: 'accounts'
+        },
+        accounts: {
+          type: 'Account'
         }
       }
     }
   } });
 
+  await store.store({
+    id: 'type1',
+    __typename: 'Type'
+  });
+
+  await store.store({
+    id: 'account1',
+    __typename: 'Account'
+  });
+
   const person = deepFreeze({
     id: 'person1',
     __typename: 'Person',
     name: 'Mathieu',
+    country: {
+      id: 'country1',
+      __typename: 'Country',
+      name: 'Belgium'
+    },
+    countries: [{
+      id: 'country1',
+      __typename: 'Country',
+      name: 'Belgium'
+    }],
+    friends: [],
+    typeId: 'type1',
     contacts: {
       dummy: {
         phoneId: null,
         addressId: 'address1',
         addressIds: ['address1']
       }
-    }
+    },
+    accountIds: ['account1'],
+    accounts: [{
+      id: 'account1'
+    }]
   });
 
-  const { denormalizedData: transformedData } = await proxifyReferences({ denormalizedData: person }, store);
+  const { denormalizedData: transformedData } = await store.store(person);
 
   expect(transformedData.contacts.dummy.addressId).toBe('address1');
   expect(person.contacts.dummy.addressId).toBe('address1');
@@ -79,6 +128,33 @@ test('proxify references', async () => {
 
   expect(transformedData.contacts.dummy.phone).toBeNull();
   expect(person.contacts.dummy.phone).toBeUndefined();
+
+  expect(transformedData.type).toEqual({ id: 'type1', __typename: 'Type' });
+  expect(person.type).toBeUndefined();
+  expect(store.entities.person1.type.id).toBe('type1');
+  expect(store.entities.person1.typeId).toBe('type1');
+
+  expect(transformedData.countryId).toBe('country1');
+  expect(person.countryId).toBeUndefined();
+  expect(store.entities.person1.countryId).toBe('country1');
+  expect(store.entities.person1.country.id).toBe('country1');
+
+  expect(transformedData.countryIds).toEqual(['country1']);
+  expect(person.countryIds).toBeUndefined();
+  expect(store.entities.person1.countryIds).toEqual(['country1']);
+
+  expect(store.entities.person1.countries[0].id).toBe('country1');
+  expect(store.entities.person1.countries.length).toBe(1);
+
+  expect(transformedData.friendIds).toEqual([]);
+  expect(person.friendIds).toBeUndefined();
+  expect(store.entities.person1.friendIds).toEqual([]);
+
+  expect(transformedData.accountIds).toEqual(['account1']);
+  expect(store.entities.person1.accountIds).toEqual(['account1']);
+
+  expect(transformedData.accounts).toEqual([{ id: 'account1', __typename: 'Account' }]);
+  expect(store.entities.person1.accounts).toEqual([{ id: 'account1', __typename: 'Account' }]);
 });
 
 test('empty arrays', async () => {

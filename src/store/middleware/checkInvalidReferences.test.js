@@ -208,7 +208,6 @@ test('invalid reference after deleting entity (3)', async () => {
   };
 
   const onMissingRelation = (_propName, _propValue, _object, _variables, _data) => {
-    console.log('!!!!!!!!!!!!!!!')
     return store.store({
       id: 'address2',
       __typename: 'Address',

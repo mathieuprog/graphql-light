@@ -1,6 +1,7 @@
 import {
   areArraysEqual,
   isArray,
+  isEntity,
   isEntityProxy,
   isObjectLiteral
 } from '../../utils';
@@ -10,9 +11,13 @@ export default function checkInvalidReferences(result, store) {
   return result;
 }
 
-function doCheckInvalidReferences(data, entities) {
+function doCheckInvalidReferences(data, entities, entity = null) {
+  if (isEntity(data)) {
+    entity = data;
+  }
+
   if (isArray(data)) {
-    data.forEach(element => doCheckInvalidReferences(element, entities));
+    data.forEach(element => doCheckInvalidReferences(element, entities, entity));
 
   } else if (isObjectLiteral(data) && !isEntityProxy(data)) {
     for (let [propName, propValue] of Object.entries(data)) {
@@ -22,7 +27,16 @@ function doCheckInvalidReferences(data, entities) {
 
       let match = propName.match(/(.*?)Id$/);
       if (match) {
-        const field = match[1];
+        let field = match[1];
+
+        const getConfigForReference = (propName) => {
+          return entity && store.config.transformers[entity.__typename]?.references?.[propName];
+        };
+
+        const config = getConfigForReference(propName);
+        if (config) {
+          field = config.field;
+        }
 
         if (data[field] === undefined) {
           throw new Error(`found field \`${propName}\` but no field \`${field}\``);
@@ -49,11 +63,21 @@ function doCheckInvalidReferences(data, entities) {
 
       match = propName.match(/(.*?)Ids$/);
       if (match) {
+        const getConfigForReference = (propName) => {
+          return entity && store.config.transformers[entity.__typename]?.references?.[propName];
+        };
+
         let field = match[1];
-        for (let [prop, val] of Object.entries(data)) {
-          if (prop !== propName && prop.startsWith(field) && !prop.match(/(.*?)Ids?$/) && isArray(val)) {
-            field = prop;
-            break;
+
+        const config = getConfigForReference(propName);
+        if (config) {
+          field = config.field;
+        } else {
+          for (let [prop, val] of Object.entries(data)) {
+            if (prop !== propName && prop.startsWith(field) && !prop.match(/(.*?)Ids?$/) && isArray(val)) {
+              field = prop;
+              break;
+            }
           }
         }
 
@@ -76,7 +100,7 @@ function doCheckInvalidReferences(data, entities) {
         continue;
       }
 
-      doCheckInvalidReferences(propValue, entities);
+      doCheckInvalidReferences(propValue, entities, entity);
     }
   }
 }
