@@ -302,7 +302,7 @@ query.setOnFetchArrayOfEntities((propName, _object) => {
     case 'articles':
       return 'append';
   }
-};
+});
 ```
 
 ### Customize query behavior on cache updates
