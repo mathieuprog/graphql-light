@@ -3,7 +3,6 @@ import {
   isArray,
   isArrayOfObjectLiterals,
   isEmptyArray,
-  isEntity,
   isObjectLiteral
 } from '../../utils';
 import createProxy from '../createProxy';
