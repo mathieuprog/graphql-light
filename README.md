@@ -214,8 +214,7 @@ In the example above, every incoming object with typename `"Article"` will have 
 Another nice thing to do, is to convert the foreign keys into objects, to allow chaining properties as if data is denormalized:
 
 ```javascript
-import { FetchStrategy } from 'graphql-light';
-import client from './client';
+import { store } from 'graphql-light';
 
 store.setConfig({
   transformers: {
