@@ -1,6 +1,7 @@
 import AbstractQuery from './AbstractQuery';
 import QueryForVars from './QueryForVars';
 import OnUnobservedStrategy from '../constants/OnUnobservedStrategy';
+import UpdateType from '../constants/UpdateType';
 
 export default class Query extends AbstractQuery {
   // resolver: function retrieving the data from the cache and from the server's response data
