@@ -1,8 +1,10 @@
 import {
   hasObjectProps,
   isArray,
+  isArrayOfEntities,
   isArrayOfObjectLiterals,
   isEmptyArray,
+  isEntity,
   isObjectLiteral
 } from '../../utils';
 import createProxy from '../createProxy';
@@ -23,8 +25,7 @@ async function doProxifyReferences(data, entity, store, callbacks) {
   if (isObjectLiteral(data)) {
     let object = { ...data };
 
-    // do not use isEntity() as we might have an array of ids
-    if (object.id && object.__typename) {
+    if (isEntity(object)) {
       entity = object;
     }
 
@@ -51,15 +52,9 @@ async function doProxifyReferences(data, entity, store, callbacks) {
       let config = getConfigForField(propName);
       if (config && !object[config.reference]) {
         if (isArray(propValue)) {
-          const config = getConfigForField(propName);
-          if (config && !object[config.reference]) {
-            object[config.reference] = propValue.map(({ id }) => id);
-          }
+          object[config.reference] = propValue.map(({ id }) => id);
         } else {
-          const config = getConfigForField(propName);
-          if (config && !object[config.reference]) {
-            object[config.reference] = propValue?.id || null;
-          }
+          object[config.reference] = propValue?.id || null;
         }
       }
 
@@ -70,7 +65,7 @@ async function doProxifyReferences(data, entity, store, callbacks) {
           if (field && !object[field]) {
             object[field] = [];
           }
-        } else if (isArray(propValue) && propValue.length > 0 && propValue[0].__typename) {
+        } else if (isArrayOfEntities(propValue)) {
           object[propName] = await doProxifyReferences(propValue, entity, store, callbacks);
         } else if (isArrayOfObjectLiterals(propValue)) {
           if (propValue.length > 0) {

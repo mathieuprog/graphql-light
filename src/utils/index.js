@@ -32,15 +32,7 @@ function unique(array) {
 }
 
 function isEntity(o) {
-  if (isObjectLiteral(o)) {
-    if (!!o.id !== !!o.__typename) {
-      throw new Error(`id or __typename not set: ${JSON.stringify(o)}`);
-    }
-
-    return !!(o.id && o.__typename);
-  }
-
-  return false;
+  return !!(isObjectLiteral(o) && o.id && o.__typename);
 }
 
 function isEntityProxy(o) {

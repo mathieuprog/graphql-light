@@ -161,3 +161,25 @@ test('store', async () => {
 
   expect(store.getSingleEntity(store.filterEntities({ label: 'foobar' }, entities)).label).toBe('foobar');
 });
+
+test('store data having an object containing __typename but no id', async () => {
+  const success = deepFreeze({
+    createSuccess: {
+      __typename: 'CreateSuccess',
+      person: {
+        id: 'person2',
+        __typename: 'Person',
+        name: 'John'
+      }
+    }
+  });
+
+  const entities = { ...store.getEntities() };
+
+  await store.store(success);
+
+  const newEntities = store.getEntities();
+
+  expect(entities['person2']).toBeUndefined();
+  expect(newEntities['person2'].name).toBe('John');
+});

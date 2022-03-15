@@ -26,16 +26,14 @@ function doRefresh(entities, data, updatesToListenTo, nestedEntity = false, getD
     return null;
   }
 
-  // do not use isEntity() as we might have only a __typename
-  if (data.id && data.__typename && isEntityProxy(data)) {
+  if (isEntityProxy(data)) {
     return data;
   }
 
   if (isObjectLiteral(data)) {
     let object = { ...data };
 
-    // do not use isEntity() as we might have only a __typename
-    const isEntity_ = object.id && object.__typename;
+    const isEntity_ = isEntity(object);
 
     if (isEntity_) {
       // nested entity, it might have changed ID
@@ -50,7 +48,7 @@ function doRefresh(entities, data, updatesToListenTo, nestedEntity = false, getD
     }
 
     for (let [propName, propValue] of Object.entries(object)) {
-      object[propName] = doRefresh(entities, propValue, updatesToListenTo, nestedEntity, () => getDataFromStore?.()[propName]);
+      object[propName] = doRefresh(entities, propValue, updatesToListenTo, nestedEntity, () => getDataFromStore?.()?.[propName]);
     }
 
     if (isEntity_) {
