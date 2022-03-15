@@ -34,7 +34,8 @@ function doRefresh(entities, data, updatesToListenTo, nestedEntity = false, getD
   if (isObjectLiteral(data)) {
     let object = { ...data };
 
-    const isEntity_ = isEntity(object);
+    // do not use isEntity() as we might have only a __typename
+    const isEntity_ = object.id && object.__typename;
 
     if (isEntity_) {
       // nested entity, it might have changed ID
