@@ -26,7 +26,8 @@ function doRefresh(entities, data, updatesToListenTo, nestedEntity = false, getD
     return null;
   }
 
-  if (isEntityProxy(data)) {
+  // do not use isEntity() as we might have only a __typename
+  if (data.id && data.__typename && isEntityProxy(data)) {
     return data;
   }
 
