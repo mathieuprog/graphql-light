@@ -49,25 +49,22 @@ async function doProxifyReferences(data, entity, store, callbacks) {
         continue;
       }
 
-      // do not use isEntity() as we might have only a __typename
-      if (propValue.id && propValue.__typename) {
-        const config = getConfigForField(propName);
-        if (config && !object[config.reference]) {
-          object[config.reference] = propValue.id;
-        }
-      } else if (isEmptyArray(propValue)) {
-        const config = getConfigForField(propName);
-        if (config && !object[config.reference]) {
-          object[config.reference] = [];
-        }
-      } else if (isArray(propValue)) {
-        const config = getConfigForField(propName);
-        if (config && !object[config.reference]) {
-          object[config.reference] = propValue.map(({ id }) => id);
+      let config = getConfigForField(propName);
+      if (config && !object[config.reference]) {
+        if (isArray(propValue)) {
+          const config = getConfigForField(propName);
+          if (config && !object[config.reference]) {
+            object[config.reference] = propValue.map(({ id }) => id);
+          }
+        } else {
+          const config = getConfigForField(propName);
+          if (config && !object[config.reference]) {
+            object[config.reference] = propValue?.id || null;
+          }
         }
       }
 
-      const config = getConfigForReference(propName);
+      config = getConfigForReference(propName);
       if (config) {
         if (isEmptyArray(propValue)) {
           const { field } = config;

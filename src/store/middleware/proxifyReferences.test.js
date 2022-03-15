@@ -63,7 +63,11 @@ test('proxify references', async () => {
         },
         accounts: {
           type: 'Account'
-        }
+        },
+        calendarId: {
+          type: 'Calendar',
+          field: 'calendar'
+        },
       }
     }
   } });
@@ -104,7 +108,8 @@ test('proxify references', async () => {
     accountIds: ['account1'],
     accounts: [{
       id: 'account1'
-    }]
+    }],
+    calendar: null
   });
 
   const { denormalizedData: transformedData } = await store.store(person);
@@ -155,6 +160,13 @@ test('proxify references', async () => {
 
   expect(transformedData.accounts).toEqual([{ id: 'account1', __typename: 'Account' }]);
   expect(store.entities.person1.accounts).toEqual([{ id: 'account1', __typename: 'Account' }]);
+
+  expect(transformedData.calendarId).toBeNull();
+  expect(transformedData.calendar).toBeNull();
+  expect(person.calendarId).toBeUndefined();
+  expect(person.calendar).toBeNull();
+  expect(store.entities.person1.calendarId).toBeNull();
+  expect(store.entities.person1.calendar).toBeNull();
 });
 
 test('empty arrays', async () => {
