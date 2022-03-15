@@ -127,7 +127,8 @@ function doNormalize(store, object, getObjectFromStore, callbacks, newEntities, 
     normalizedObject[propName] = propValue;
   }
 
-  if (isEntity(normalizedObject)) {
+  // do not use isEntity() as we might have only a __typename
+  if (normalizedObject.id && normalizedObject.__typename) {
     const normalizedEntity = normalizedObject;
     const isNewEntity = !newEntities.byId[normalizedEntity.id];
 
