@@ -138,8 +138,8 @@ let unsubscriber;
 
 let articles =
   articlesQuery.watch({ authorId: 1 },
-    updatedArticles => articles = updatedArticles,
-    unsubscribe => unsubscriber = unsubscribe
+    (updatedArticles) => articles = updatedArticles,
+    (unsubscribe) => unsubscriber = unsubscribe
   );
 ```
 
@@ -273,7 +273,7 @@ Deleting and updating entities from the cache is done by passing a callback func
 ```javascript
 import { removeEntityById } from 'graphql-light';
 
-query.setOnFetchEntity(normalizedEntity => {
+query.setOnFetchEntity((normalizedEntity) => {
   if (normalizedEntity.__typename === 'Article') {
     return removeEntityById(normalizedEntity.id);
   }
@@ -288,7 +288,7 @@ query.setOnFetchEntity(normalizedEntity => {
 `updateEntity` is especially useful if we need to add or remove elements from arrays:
 
 ```javascript
-updateEntity(normalizedEntity, 'articles', articles =>
+updateEntity(normalizedEntity, 'articles', (articles) =>
   articles.filter(({ id }) => id !== 'article1' && id !== 'article2'));
 ```
 
@@ -321,7 +321,7 @@ query.setOnStoreUpdate((update, variables, match) => {
         entity: { __typename: 'Article', authorId: variables.authorId }
       })
   ) {
-    return cache => ({ ...cache, articles: [...cache.articles, entity] });
+    return (cache) => ({ ...cache, articles: [...cache.articles, entity] });
   }
 });
 ```
@@ -339,9 +339,9 @@ In some cases you might want to catch such errors, for example when handling aut
 ```javascript
 import { GraphQLError } from 'graphql-light';
 
-someQuery.catch(error => {
+someQuery.catch((error) => {
   if (error instanceof GraphQLError) {
-    const isUnauthenticated = error.graphQLErrors.some(error => {
+    const isUnauthenticated = error.graphQLErrors.some((error) => {
       return error.extensions.code === 'unauthenticated';
     });
 
@@ -384,7 +384,7 @@ The caching behavior can further be customized through the `setOnUnobservedStrat
 ```javascript
 import { OnUnobservedStrategy } from 'graphql-light';
 
-query.setOnUnobservedStrategy(_variables => {
+query.setOnUnobservedStrategy((_variables) => {
   return OnUnobservedStrategy.KEEP_UPDATING;
 });
 ```
@@ -398,7 +398,7 @@ Lastly, a query may be given two options:
 * `refreshAfterDuration`: re-execute the query on the server after a given duration.
 
 ```javascript
-query.setOptions(_variables => ({
+query.setOptions((_variables) => ({
   clearWhenInactiveForDuration: Temporal.Duration.from({ days: 1 }),
   refreshAfterDuration: Temporal.Duration.from({ hours: 2 })
 }));
@@ -468,8 +468,8 @@ import { articlesQuery } from './graphql';
 
 let articles =
   articlesQuery.watch({ authorId: 1 },
-    updatedArticles => articles = updatedArticles,
-    unsubscribe => unsubscriber = unsubscribe,
+    (updatedArticles) => articles = updatedArticles,
+    (unsubscribe) => unsubscriber = unsubscribe,
     { fetchStrategy: FetchStrategy.CACHE_AND_NETWORK }
   );
 ```
