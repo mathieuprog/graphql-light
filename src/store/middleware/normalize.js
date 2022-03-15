@@ -70,7 +70,8 @@ function doNormalize(store, object, getObjectFromStore, callbacks, newEntities, 
       continue;
     }
 
-    if (isEntity(propValue)) {
+    // do not use isEntity() as we might have only a __typename
+    if (propValue && propValue.id && propValue.__typename) {
       let entity = propValue; // renaming for readability
 
       doNormalize(store, entity, () => store.getEntityById(entity.id), callbacks, newEntities, updates);
