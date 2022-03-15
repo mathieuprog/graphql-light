@@ -1,7 +1,6 @@
 import {
   hasObjectProps,
   isArray,
-  isArrayOfEntities,
   isArrayOfObjectLiterals,
   isEmptyArray,
   isEntity,
@@ -50,7 +49,8 @@ async function doProxifyReferences(data, entity, store, callbacks) {
         continue;
       }
 
-      if (isEntity(propValue)) {
+      // do not use isEntity() as we might have only a __typename
+      if (propValue.id && propValue.__typename) {
         const config = getConfigForField(propName);
         if (config && !object[config.reference]) {
           object[config.reference] = propValue.id;
