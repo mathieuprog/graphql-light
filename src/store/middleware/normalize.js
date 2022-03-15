@@ -56,7 +56,8 @@ function doNormalize(store, object, getObjectFromStore, callbacks, newEntities, 
 
   object = { ...object };
 
-  if (isEntity(object)) {
+  // do not use isEntity() as we might have only a __typename
+  if (object.id && object.__typename) {
     const transformResolvers = store.config.transformers[object.__typename]?.data;
     if (transformResolvers) {
       object = transform(object, transformResolvers);
