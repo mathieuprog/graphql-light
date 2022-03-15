@@ -330,6 +330,34 @@ query.setOnStoreUpdate((update, variables, match) => {
 
 Possible update types are  `CREATE_ENTITY`, `DELETE_ENTITY` and `UPDATE_PROP`.
 
+The code above may be written more concisely using the `handleStoreUpdate` helper. Below the creation and deletion of articles have been handled using `handleStoreUpdate`:
+
+```javascript
+import { UpdateType } from 'graphql-light';
+
+query.setOnStoreUpdate((update, variables, match) => {
+  return handleStoreUpdate(update, {
+    Article: {
+      shouldUpdate(article) {
+        return article.authorId === variables.authorId;
+      },
+      onCreate(article) {
+        return (author) => ({
+          ...author,
+          articles: [...author.articles, entity]
+        });
+      },
+      onDelete(article) {
+        return (author) => ({
+          ...author,
+          articles: author.articles.filter(({ id }) => article.id !== id)
+        });
+      }
+    }
+  });
+});
+```
+
 ## Errors
 
 `GraphQLError` is a custom error type that is thrown when the server returns GraphQL errors. It holds a `graphQLErrors` property that contains the list of errors.
@@ -641,6 +669,8 @@ store.setConfig({ debug: false });
 ### removeEntityById function
 
 ### updateEntity function
+
+### handleStoreUpdate function
 
 ### store instance
 

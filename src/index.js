@@ -7,7 +7,7 @@ import GraphQLError from './errors/GraphQLError';
 import NotFoundInCacheError from './errors/NotFoundInCacheError';
 import Mutation from './mutation/Mutation';
 import DerivedQuery from './query/DerivedQuery';
-import Query from './query/Query';
+import Query, { handleStoreUpdate } from './query/Query';
 import store from './store';
 import {
   removeEntity,
@@ -27,6 +27,7 @@ export {
   DerivedQuery,
   Query,
   store,
+  handleStoreUpdate,
   removeEntity,
   removeEntityById,
   updateEntity

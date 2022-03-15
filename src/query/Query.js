@@ -78,3 +78,18 @@ export default class Query extends AbstractQuery {
     delete this.queriesForVars[stringifiedVars];
   }
 }
+
+export function handleStoreUpdate({ entity, type, propName }, config) {
+  const { shouldUpdate, onCreate, onDelete, onUpdate } = config[entity.__typename] || {};
+
+  switch (type) {
+    case UpdateType.CREATE_ENTITY:
+      return onCreate && shouldUpdate(entity) && onCreate(entity);
+
+    case UpdateType.DELETE_ENTITY:
+      return onDelete && shouldUpdate(entity) && onDelete(entity);
+
+    case UpdateType.UPDATE_PROP:
+      return onUpdate && shouldUpdate(entity) && onUpdate(entity, propName);
+  }
+};
