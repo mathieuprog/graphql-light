@@ -687,6 +687,8 @@ store.setConfig({ debug: false });
 
 ### handleStoreUpdate function
 
+### findGraphQLError function
+
 ### store instance
 
 ## Installation
