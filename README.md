@@ -329,7 +329,7 @@ query.setOnStoreUpdate((update, variables, match) => {
 
 Possible update types are  `CREATE_ENTITY`, `DELETE_ENTITY` and `UPDATE_PROP`.
 
-The code above may be written more concisely using the `handleStoreUpdate` helper. Below the creation and deletion of articles have been handled using `handleStoreUpdate`:
+The code above may be written using the `handleStoreUpdate` helper. Below the creation and deletion of articles have been handled using `handleStoreUpdate`:
 
 ```javascript
 import { handleStoreUpdate } from 'graphql-light';
