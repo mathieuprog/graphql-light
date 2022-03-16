@@ -382,6 +382,22 @@ someQuery.catch((error) => {
 });
 ```
 
+The code above may also be written using the `findGraphQLError` helper function:
+
+```javascript
+import { findGraphQLError } from 'graphql-light';
+
+someQuery.catch((error) => {
+  const unauthenticatedError = findGraphQLError(error, ({ extensions: { code } }) => code === 'unauthenticated');
+  if (unauthenticatedError) {
+    // do something
+    return;
+  }
+
+  throw error;
+});
+```
+
 ## Advanced features
 
 ### Query caching strategies

@@ -3,7 +3,7 @@ import NetworkRequest from './client/NetworkRequest';
 import FetchStrategy from './constants/FetchStrategy';
 import OnUnobservedStrategy from './constants/OnUnobservedStrategy';
 import UpdateType from './constants/UpdateType';
-import GraphQLError from './errors/GraphQLError';
+import GraphQLError, { findGraphQLError } from './errors/GraphQLError';
 import NotFoundInCacheError from './errors/NotFoundInCacheError';
 import Mutation from './mutation/Mutation';
 import DerivedQuery from './query/DerivedQuery';
@@ -22,6 +22,7 @@ export {
   OnUnobservedStrategy,
   UpdateType,
   GraphQLError,
+  findGraphQLError,
   NotFoundInCacheError,
   Mutation,
   DerivedQuery,

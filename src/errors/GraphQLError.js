@@ -8,3 +8,11 @@ export default class GraphQLError extends Error {
     this.graphQLErrors = errorArray;
   }
 }
+
+export function findGraphQLError(error, find) {
+  if (error instanceof GraphQLError === false) {
+    return null;
+  }
+
+  return error.graphQLErrors.find(find);
+}
