@@ -11,7 +11,7 @@ export default class Client {
     const json =
       (Object.keys(variables).length === 0)
       ? { query }
-      : { query, variables }
+      : { query, variables };
 
     const { data, errors } = await ky.post(this.url, { json, ...this.options }).json();
 
