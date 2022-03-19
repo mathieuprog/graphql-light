@@ -27,6 +27,7 @@
   * [Caching entities manually](#caching-entities-manually)
   * [Inspecting the cache](#inspecting-the-cache)
   * [Debug mode](#debug-mode)
+  * [Build the client asynchronously](#build-the-client-asynchronously)
 * [API](#api)
 * [Installation](#installation)
 
@@ -606,6 +607,27 @@ import { store } from 'graphql-light';
 
 store.setConfig({ debug: false });
 ```
+
+### Build the client asynchronously
+
+```javascript
+import { Client } from 'graphql-light';
+
+async function createClient() {
+  const csrf = await getCsrfToken();
+
+  const url = 'http://example.com/api';
+
+  return new Client(url, {
+    credentials: 'include',
+    headers: { 'x-csrf-token': csrf }
+  });
+}
+
+export default createClient();
+```
+
+export default createClient();
 
 ## API
 
