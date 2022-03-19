@@ -28,7 +28,8 @@ export default class Mutation {
   }
 
   async mutate(variables, callback = _ => true) {
-    let data = await this.client.request(this.queryDocument, variables || {});
+    const client = await this.client;
+    let data = await client.request(this.queryDocument, variables || {});
 
     callback(data);
 

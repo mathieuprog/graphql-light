@@ -63,7 +63,10 @@ export default class Query extends AbstractQuery {
     let queryForVars = this.queriesForVars[stringifiedVars];
 
     if (!queryForVars) {
-      const executeRequest = () => this.client.request(this.queryDocument, variables);
+      const executeRequest = async () => {
+        const client = await this.client;
+        return await client.request(this.queryDocument, variables);
+      };
       const onUnobservedStrategy = this.getOnUnobservedStrategy(variables);
       const options = this.getOptions(variables);
       queryForVars = new QueryForVars(this, executeRequest, variables, onUnobservedStrategy, options);
