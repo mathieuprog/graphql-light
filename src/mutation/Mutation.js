@@ -43,7 +43,7 @@ export default class Mutation {
         (propName, object) => this.onFetchArrayOfEntities(propName, object, variables, data);
 
       const onMissingRelation =
-        (propName, propValue, object) => this.query.onMissingRelation(propName, propValue, object, variables, data);
+        (propName, propValue, object) => this.onMissingRelation(propName, propValue, object, variables, data);
 
       await store.store(transformedData, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation });
     }
