@@ -1,24 +1,23 @@
-import ky from 'ky';
-import GraphQLError from '../errors/GraphQLError';
+import HttpClient from './HttpClient';
+import WsClient from './WsClient';
 
 export default class Client {
-  constructor(url, options) {
-    this.url = url;
-    this.options = options;
+  constructor(httpParams = {}, wsParams = {}) {
+    this.httpClient = (httpParams.url) ? new HttpClient(httpParams) : null;
+    this.wsClient = (wsParams.url) ? new WsClient(wsParams) : null;
   }
 
-  async request(query, variables = {}) {
-    const json =
-      (Object.keys(variables).length === 0)
-      ? { query }
-      : { query, variables };
-
-    const { data, errors } = await ky.post(this.url, { json, ...this.options }).json();
-
-    if (errors) {
-      throw new GraphQLError(errors);
+  request(query, variables) {
+    if (!this.httpClient) {
+      throw new Error('no http client configured');
     }
+    return this.httpClient.request(query, variables);
+  }
 
-    return data;
+  subscribe(query, variables, sink, options = {}) {
+    if (!this.wsClient) {
+      throw new Error('no ws client configured');
+    }
+    return this.wsClient.subscribe(query, variables, sink, options);
   }
 }
