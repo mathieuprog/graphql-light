@@ -27,15 +27,13 @@ export default class Mutation {
     this.onMissingRelation = onMissingRelation;
   }
 
-  async mutate(variables, callback = _ => true) {
+  async mutate(variables) {
     if (!variables) {
       throw new Error('invalid argument: variables');
     }
 
     const client = await this.client;
     let data = await client.request(this.queryDocument, variables);
-
-    callback(data);
 
     const transformedData = this.transformer(data, variables);
 
