@@ -28,8 +28,12 @@ export default class Mutation {
   }
 
   async mutate(variables, callback = _ => true) {
+    if (!variables) {
+      throw new Error('invalid argument: variables');
+    }
+
     const client = await this.client;
-    let data = await client.request(this.queryDocument, variables || {});
+    let data = await client.request(this.queryDocument, variables);
 
     callback(data);
 
