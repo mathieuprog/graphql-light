@@ -1,5 +1,5 @@
 import {
-  hasObjectProps,
+  hasObjectProperties,
   isArray,
   isArrayOfEntities,
   isArrayOfObjectLiterals,
@@ -75,7 +75,7 @@ async function doProxifyReferences(data, entity, store, callbacks) {
               propValue
                 .filter(({ id }) => {
                   const referencedEntity = store.getEntityById(id);
-                  return !referencedEntity || (ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields));
+                  return !referencedEntity || (ensureHasFields && !hasObjectProperties(referencedEntity, ensureHasFields));
                 })
                 .map(({ id }) => id);
 
@@ -92,7 +92,7 @@ async function doProxifyReferences(data, entity, store, callbacks) {
                   propValue
                     .forEach(({ id }) => {
                       const referencedEntity = store.getEntityById(id);
-                      if (referencedEntity && !hasObjectProps(referencedEntity, ensureHasFields)) {
+                      if (referencedEntity && !hasObjectProperties(referencedEntity, ensureHasFields)) {
                         throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields}`);
                       }
                     });
@@ -101,7 +101,7 @@ async function doProxifyReferences(data, entity, store, callbacks) {
                 propValue
                   .forEach(({ id }) => {
                     const referencedEntity = store.getEntityById(id);
-                    if (referencedEntity && !hasObjectProps(referencedEntity, ensureHasFields)) {
+                    if (referencedEntity && !hasObjectProperties(referencedEntity, ensureHasFields)) {
                       throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields} (no \`handleMissing\` callback)`);
                     }
                   });
@@ -122,7 +122,7 @@ async function doProxifyReferences(data, entity, store, callbacks) {
               propValue
                 .filter(id => {
                   const referencedEntity = store.getEntityById(id);
-                  return !referencedEntity || (ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields));
+                  return !referencedEntity || (ensureHasFields && !hasObjectProperties(referencedEntity, ensureHasFields));
                 });
 
             if (incompleteEntities.length > 0) {
@@ -138,7 +138,7 @@ async function doProxifyReferences(data, entity, store, callbacks) {
                   propValue
                     .forEach(id => {
                       const referencedEntity = store.getEntityById(id);
-                      if (referencedEntity && !hasObjectProps(referencedEntity, ensureHasFields)) {
+                      if (referencedEntity && !hasObjectProperties(referencedEntity, ensureHasFields)) {
                         throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields}`);
                       }
                     });
@@ -147,7 +147,7 @@ async function doProxifyReferences(data, entity, store, callbacks) {
                 propValue
                   .forEach(id => {
                     const referencedEntity = store.getEntityById(id);
-                    if (referencedEntity && !hasObjectProps(referencedEntity, ensureHasFields)) {
+                    if (referencedEntity && !hasObjectProperties(referencedEntity, ensureHasFields)) {
                       throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields} (no \`handleMissing\` callback)`);
                     }
                   });
@@ -169,7 +169,7 @@ async function doProxifyReferences(data, entity, store, callbacks) {
             else {
               let referencedEntity = store.getEntityById(propValue);
 
-              if (!referencedEntity || ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields)) {
+              if (!referencedEntity || ensureHasFields && !hasObjectProperties(referencedEntity, ensureHasFields)) {
                 let handleMissing = config.handleMissing;
                 if (callbacks?.onMissingRelation) {
                   handleMissing = (value, object) => callbacks?.onMissingRelation?.(propName, value, object);
@@ -183,12 +183,12 @@ async function doProxifyReferences(data, entity, store, callbacks) {
                   if (!referencedEntity) {
                     object[field] = null;
                     object[propName] = null;
-                  } else if (ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields)) {
+                  } else if (ensureHasFields && !hasObjectProperties(referencedEntity, ensureHasFields)) {
                     throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields}`);
                   } else {
                     object[field] = createProxy({ id: propValue, __typename: type }, store.getEntityById.bind(store));
                   }
-                } else if (ensureHasFields && !hasObjectProps(referencedEntity, ensureHasFields)) {
+                } else if (ensureHasFields && !hasObjectProperties(referencedEntity, ensureHasFields)) {
                   throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields} (no \`handleMissing\` callback)`);
                 } else {
                   object[field] = null;
