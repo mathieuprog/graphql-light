@@ -5,10 +5,12 @@ import {
   hasObjectProperties,
   isArray,
   isArrayOfObjectLiterals,
+  isArrayOfPrimitives,
   isEmptyArray,
   isNullOrUndefined,
   isObjectLiteral,
-  isObjectSubset
+  isObjectSubset,
+  takeProperties
 } from 'object-array-utils';
 
 function unique(array) {
@@ -51,11 +53,13 @@ export {
   isArrayOfEntities,
   isArrayOfEntityProxies,
   isArrayOfObjectLiterals,
+  isArrayOfPrimitives,
   isEmptyArray,
   isEntity,
   isEntityProxy,
   isNullOrUndefined,
   isObjectLiteral,
   isObjectSubset,
+  takeProperties,
   unique
 }
