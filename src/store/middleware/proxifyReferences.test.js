@@ -122,7 +122,17 @@ test('proxify references', async () => {
     calendar: null
   });
 
-  const { denormalizedData: transformedData } = await store.store(person);
+  const onFetchArrayOfEntities = (propName) => {
+    switch (propName) {
+      case 'countries':
+        return 'append';
+
+      case 'addressIds':
+        return 'append';
+    }
+  };
+
+  const { denormalizedData: transformedData } = await store.store(person, { onFetchArrayOfEntities });
 
   expect(transformedData.contacts.dummy.addressId).toBe('address1');
   expect(person.contacts.dummy.addressId).toBeUndefined();
@@ -488,4 +498,52 @@ test('fetch missing reference in array', async () => {
   expect(transformedData.contacts.dummy.addresses[1].id).toBe('address2');
   expect(transformedData.contacts.dummy.addresses[1].__typename).toBe('Address');
   expect(isEntityProxy(transformedData.contacts.dummy.addresses[1])).toBeTruthy();
+});
+
+test('list of entities inside nested entity', async () => {
+  store.setConfig({ transformers: {
+    Person: {
+      references: {
+        friendIds: {
+          type: 'Friend',
+          field: 'friends'
+        }
+      }
+    },
+    Friend: {
+      references: {
+        recommendationIds: {
+          type: 'Recommendation',
+          field: 'recommendations'
+        }
+      }
+    }
+  } });
+
+  const person = deepFreeze({
+    id: 'person1',
+    __typename: 'Person',
+    friends: [
+      {
+        id: 'friend1',
+        __typename: 'Friend',
+        name: 'John',
+        recommendations: [
+          {
+            id: 'recommendation1',
+            __typename: 'Recommendation',
+            text: 'A recommendation'
+          }
+        ]
+      }
+    ]
+  });
+
+  const { denormalizedData: transformedData } = await proxifyReferences({ denormalizedData: person }, store);
+
+  expect(transformedData.friends[0].id).toEqual('friend1');
+  expect(transformedData.friendIds).toEqual(['friend1']);
+
+  expect(transformedData.friends[0].recommendations[0].id).toEqual('recommendation1');
+  expect(transformedData.friends[0].recommendationIds).toEqual(['recommendation1']);
 });

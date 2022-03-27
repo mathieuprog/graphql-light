@@ -55,25 +55,25 @@ function addForeignKeyFields(store, data, entity = null) {
           throw new Error();
         }
 
-        if (foreignKeyField === propName) {
-          continue;
-        }
+        if (foreignKeyField !== propName) {
+          const value = isArray(propValue) ? propValue.map(({ id }) => id) : (propValue?.id ?? null);
 
-        const value = isArray(propValue) ? propValue.map(({ id }) => id) : (propValue?.id ?? null);
-
-        if (object[foreignKeyField]) {
-          if (!areObjectsEqual({ v: object[foreignKeyField] }, { v: value })) {
-            throw new Error(`association(s) don't correspond to foreign key(s)`);
+          if (object[foreignKeyField]) {
+            if (!areObjectsEqual({ v: object[foreignKeyField] }, { v: value })) {
+              throw new Error(`association(s) don't correspond to foreign key(s)`);
+            }
+          } else {
+            object[foreignKeyField] = value;
           }
-          continue;
         }
 
-        object[foreignKeyField] = value;
+        object[propName] = addForeignKeyFields(store, propValue, entity);
         continue;
       }
 
       if (isObjectLiteral(propValue) || isArray(propValue)) {
         object[propName] = addForeignKeyFields(store, propValue, entity);
+        continue;
       }
     }
 
