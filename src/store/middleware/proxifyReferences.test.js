@@ -62,7 +62,8 @@ test('proxify references', async () => {
           field: 'accounts'
         },
         accounts: {
-          type: 'Account'
+          type: 'Account',
+          field: 'accounts'
         },
         calendarId: {
           type: 'Calendar',
@@ -80,6 +81,11 @@ test('proxify references', async () => {
   await store.store({
     id: 'account1',
     __typename: 'Account'
+  });
+
+  await store.store({
+    id: 'country2',
+    __typename: 'Country'
   });
 
   const person = deepFreeze({
@@ -100,12 +106,16 @@ test('proxify references', async () => {
     typeId: 'type1',
     contacts: {
       dummy: {
+        countryId: 'country2',
         phoneId: null,
-        addressId: 'address1',
+        address: {
+          id: 'address1',
+          __typename: 'Address',
+          street: 'Bar'
+        },
         addressIds: ['address1']
       }
     },
-    accountIds: ['account1'],
     accounts: [{
       id: 'account1'
     }],
@@ -115,13 +125,13 @@ test('proxify references', async () => {
   const { denormalizedData: transformedData } = await store.store(person);
 
   expect(transformedData.contacts.dummy.addressId).toBe('address1');
-  expect(person.contacts.dummy.addressId).toBe('address1');
+  expect(person.contacts.dummy.addressId).toBeUndefined();
 
   expect(transformedData.contacts.dummy.address).toBeTruthy();
   expect(transformedData.contacts.dummy.address.id).toBe('address1');
   expect(transformedData.contacts.dummy.address.__typename).toBe('Address');
-  expect(isEntityProxy(transformedData.contacts.dummy.address)).toBeTruthy();
-  expect(person.contacts.dummy.address).toBeUndefined();
+  expect(isEntityProxy(transformedData.contacts.dummy.country)).toBeTruthy();
+  expect(person.contacts.dummy.address).toBeTruthy();
 
   expect(transformedData.contacts.dummy.addresses).toBeTruthy();
   expect(transformedData.contacts.dummy.addresses.length).toBe(1);
@@ -129,7 +139,6 @@ test('proxify references', async () => {
   expect(person.contacts.dummy.addresses).toBeUndefined();
 
   expect(transformedData.contacts.dummy.addressId).toBe('address1');
-  expect(person.contacts.dummy.addressId).toBe('address1');
 
   expect(transformedData.contacts.dummy.phone).toBeNull();
   expect(person.contacts.dummy.phone).toBeUndefined();
@@ -174,7 +183,8 @@ test('empty arrays', async () => {
     Person: {
       references: {
         phones: {
-          type: 'Phone'
+          type: 'Phone',
+          field: 'phones'
         },
         addressIds: {
           type: 'Address',
@@ -252,7 +262,8 @@ test('missing reference and no handleMissing callback', async () => {
       references: {
         addressId: {
           type: 'Address',
-          field: 'address'
+          field: 'address',
+          handleMissing() { return null }
         }
       }
     }
@@ -294,7 +305,8 @@ test('missing reference in array', async () => {
     Person: {
       references: {
         addresses: {
-          type: 'Address'
+          type: 'Address',
+          field: 'addresses'
         }
       }
     }
@@ -334,7 +346,9 @@ test('missing reference in array no handleMissing callback', async () => {
     Person: {
       references: {
         addresses: {
-          type: 'Address'
+          type: 'Address',
+          field: 'addresses',
+          handleMissing() {}
         }
       }
     }
@@ -446,7 +460,8 @@ test('fetch missing reference in array', async () => {
     Person: {
       references: {
         addresses: {
-          type: 'Address'
+          type: 'Address',
+          field: 'addresses'
         }
       }
     }

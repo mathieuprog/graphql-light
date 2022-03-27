@@ -1,10 +1,14 @@
+import { isNullOrUndefined } from 'object-array-utils';
 import {
+  areObjectsEqual,
   hasObjectProperties,
   isArray,
-  isArrayOfEntities,
   isArrayOfObjectLiterals,
+  isArrayOfType,
+  isAssociationField,
   isEmptyArray,
   isEntity,
+  isForeignKeyField,
   isObjectLiteral
 } from '../../utils';
 import createProxy from '../createProxy';
@@ -16,192 +20,60 @@ export default async function proxifyReferences(result, store, callbacks = {}) {
 
   let { denormalizedData } = result;
 
-  denormalizedData = await doProxifyReferences(denormalizedData, null, store, callbacks);
+  denormalizedData = addForeignKeyFields(store, denormalizedData);
+  denormalizedData = await addAssociationFields(store, denormalizedData, callbacks);
 
   return { ...result, denormalizedData };
 }
 
-async function doProxifyReferences(data, entity, store, callbacks) {
+function addForeignKeyFields(store, data, entity = null) {
   if (isObjectLiteral(data)) {
-    let object = { ...data };
+    const object = { ...data };
 
     if (isEntity(object)) {
       entity = object;
     }
 
-    const getConfigForReference = (propName) => {
-      return entity && store.config.transformers[entity.__typename]?.references?.[propName];
-    };
-
-    const getConfigForField = (propName) => {
-      const references = entity && store.config.transformers[entity.__typename]?.references;
-      if (references) {
-        for (const reference in references) {
-          if (references[reference].field === propName) {
-            return { ...references[reference], reference };
-          }
-        }
-      }
-    };
-
-    for (let [propName, propValue] of Object.entries(object)) {
+    for (const [propName, propValue] of Object.entries(object)) {
       if (['id', '__typename'].includes(propName)) {
         continue;
       }
 
-      let config = getConfigForField(propName);
-      if (config && !object[config.reference]) {
-        if (isArray(propValue)) {
-          object[config.reference] = propValue.map(({ id }) => id);
-        } else {
-          object[config.reference] = propValue?.id || null;
+      if (entity && isAssociationField(store, entity, propName)) {
+        if (
+          !isNullOrUndefined(propValue)
+          && !isEntity(propValue)
+          && !isArray(propValue)
+        ) {
+          throw new Error('association is neither an entity or array of entities');
         }
+
+        const associations = store.config.associationsByTypename[entity.__typename];
+
+        const { foreignKeyField } = associations.find(({ field }) => field === propName);
+        if (!foreignKeyField) {
+          throw new Error();
+        }
+
+        if (foreignKeyField === propName) {
+          continue;
+        }
+
+        const value = isArray(propValue) ? propValue.map(({ id }) => id) : (propValue?.id ?? null);
+
+        if (object[foreignKeyField]) {
+          if (!areObjectsEqual({ v: object[foreignKeyField] }, { v: value })) {
+            throw new Error(`association(s) don't correspond to foreign key(s)`);
+          }
+          continue;
+        }
+
+        object[foreignKeyField] = value;
+        continue;
       }
 
-      config = getConfigForReference(propName);
-      if (config) {
-        if (isEmptyArray(propValue)) {
-          const { field } = config;
-          if (field && !object[field]) {
-            object[field] = [];
-          }
-        } else if (isArrayOfEntities(propValue)) {
-          object[propName] = await doProxifyReferences(propValue, entity, store, callbacks);
-        } else if (isArrayOfObjectLiterals(propValue)) {
-          if (propValue.length > 0) {
-            const { type, ensureHasFields } = config;
-
-            const incompleteEntities =
-              propValue
-                .filter(({ id }) => {
-                  const referencedEntity = store.getEntityById(id);
-                  return !referencedEntity || (ensureHasFields && !hasObjectProperties(referencedEntity, ensureHasFields));
-                })
-                .map(({ id }) => id);
-
-            if (incompleteEntities.length > 0) {
-              let handleMissing = config.handleMissing;
-              if (callbacks?.onMissingRelation) {
-                handleMissing = (value, object) => callbacks?.onMissingRelation?.(propName, value, object);
-              }
-
-              if (handleMissing) {
-                await handleMissing(incompleteEntities, entity);
-
-                if (ensureHasFields) {
-                  propValue
-                    .forEach(({ id }) => {
-                      const referencedEntity = store.getEntityById(id);
-                      if (referencedEntity && !hasObjectProperties(referencedEntity, ensureHasFields)) {
-                        throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields}`);
-                      }
-                    });
-                }
-              } else if (ensureHasFields) {
-                propValue
-                  .forEach(({ id }) => {
-                    const referencedEntity = store.getEntityById(id);
-                    if (referencedEntity && !hasObjectProperties(referencedEntity, ensureHasFields)) {
-                      throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields} (no \`handleMissing\` callback)`);
-                    }
-                  });
-              }
-
-              propValue = propValue.filter(({ id }) => store.getEntityById(id));
-            }
-
-            object[propName] = propValue.map(({ id }) => createProxy({ id, __typename: type }, store.getEntityById.bind(store)));
-          }
-
-        // if we do not specify the __typename (not an array of entities), we assume the entities have been previously stored
-        } else if (isArray(propValue)) {
-          const { type, field, ensureHasFields } = config;
-
-          if (!object[field]) {
-            const incompleteEntities =
-              propValue
-                .filter(id => {
-                  const referencedEntity = store.getEntityById(id);
-                  return !referencedEntity || (ensureHasFields && !hasObjectProperties(referencedEntity, ensureHasFields));
-                });
-
-            if (incompleteEntities.length > 0) {
-              let handleMissing = config.handleMissing;
-              if (callbacks?.onMissingRelation) {
-                handleMissing = (value, object) => callbacks?.onMissingRelation?.(propName, value, object);
-              }
-
-              if (handleMissing) {
-                await handleMissing(incompleteEntities, entity);
-
-                if (ensureHasFields) {
-                  propValue
-                    .forEach(id => {
-                      const referencedEntity = store.getEntityById(id);
-                      if (referencedEntity && !hasObjectProperties(referencedEntity, ensureHasFields)) {
-                        throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields}`);
-                      }
-                    });
-                }
-              } else if (ensureHasFields) {
-                propValue
-                  .forEach(id => {
-                    const referencedEntity = store.getEntityById(id);
-                    if (referencedEntity && !hasObjectProperties(referencedEntity, ensureHasFields)) {
-                      throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields} (no \`handleMissing\` callback)`);
-                    }
-                  });
-              }
-
-              propValue = propValue.filter(id => store.getEntityById(id));
-            }
-
-            object[field] = propValue.map(id => createProxy({ id, __typename: type }, store.getEntityById.bind(store)));
-          }
-        } else {
-          const { type, field, ensureHasFields } = config;
-
-          // we have only the reference (e.g. we have `userId` field and no `user` field)
-          if (!object[field]) {
-            if (!propValue) {
-              object[field] = null;
-            }
-            else {
-              let referencedEntity = store.getEntityById(propValue);
-
-              if (!referencedEntity || ensureHasFields && !hasObjectProperties(referencedEntity, ensureHasFields)) {
-                let handleMissing = config.handleMissing;
-                if (callbacks?.onMissingRelation) {
-                  handleMissing = (value, object) => callbacks?.onMissingRelation?.(propName, value, object);
-                }
-
-                if (handleMissing) {
-                  await handleMissing(propValue, entity);
-
-                  referencedEntity = store.getEntityById(propValue);
-
-                  if (!referencedEntity) {
-                    object[field] = null;
-                    object[propName] = null;
-                  } else if (ensureHasFields && !hasObjectProperties(referencedEntity, ensureHasFields)) {
-                    throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields}`);
-                  } else {
-                    object[field] = createProxy({ id: propValue, __typename: type }, store.getEntityById.bind(store));
-                  }
-                } else if (ensureHasFields && !hasObjectProperties(referencedEntity, ensureHasFields)) {
-                  throw Error(`entity ${JSON.stringify(referencedEntity)} is missing fields ${ensureHasFields} (no \`handleMissing\` callback)`);
-                } else {
-                  object[field] = null;
-                  object[propName] = null;
-                }
-              } else {
-                object[field] = createProxy({ id: propValue, __typename: type }, store.getEntityById.bind(store));
-              }
-            }
-          }
-        }
-      } else {
-        object[propName] = await doProxifyReferences(propValue, entity, store, callbacks);
+      if (isObjectLiteral(propValue) || isArray(propValue)) {
+        object[propName] = addForeignKeyFields(store, propValue, entity);
       }
     }
 
@@ -209,11 +81,167 @@ async function doProxifyReferences(data, entity, store, callbacks) {
   }
 
   if (isArray(data)) {
-    let array = [...data];
-    array =  await Promise.all(array.map(element => doProxifyReferences(element, entity, store, callbacks)));
-
-    return array;
+    return data.map(element => addForeignKeyFields(store, element, entity));
   }
 
   return data;
+}
+
+function addAssociationFields(store, data, callbacks) {
+  return doAddAssociationFields(store, data, null, callbacks)
+}
+
+async function doAddAssociationFields(store, data, entity, callbacks) {
+  if (isObjectLiteral(data)) {
+    const object = { ...data };
+
+    if (isEntity(object)) {
+      entity = object;
+    }
+
+    for (let [propName, propValue] of Object.entries(object)) {
+      if (['id', '__typename'].includes(propName)) {
+        continue;
+      }
+
+      if (entity && isForeignKeyField(store, entity, propName)) {
+        const associations = store.config.associationsByTypename[entity.__typename];
+
+        const { field } = associations.find(({ foreignKeyField }) => foreignKeyField === propName);
+        if (!field) {
+          throw new Error();
+        }
+
+        if (object[field] && field !== propName) {
+          const value = isArray(object[field]) ? object[field].map(({ id }) => id) : (object[field]?.id || null);
+          if (!areObjectsEqual({ v: propValue }, { v: value })) {
+            throw new Error(`association(s) don't correspond to foreign key(s)`);
+          }
+          continue;
+        }
+
+        if (isNullOrUndefined(propValue) || isEmptyArray(propValue)) {
+          object[field] = propValue ?? null;
+          continue;
+        }
+
+        if (field === propName) {
+          if (!isArrayOfObjectLiterals(propValue)) {
+            throw new Error();
+          }
+
+          propValue = propValue.map(({ id }) => id);
+        }
+
+        if (isArrayOfType(propValue, 'string')) {
+          object[field] = await fetchNestedEntitiesForFk(store, entity, propName, propValue, callbacks);
+          if (field !== propName) {
+            object[propName] = object[field].map(( { id }) => id);
+          }
+          continue;
+        }
+
+        if (typeof propValue === 'string') {
+          object[field] = await fetchNestedEntityForFk(store, entity, propName, propValue, callbacks);
+          object[propName] = object[field] ? object[field].id : null;
+          continue;
+        }
+
+        throw new Error('foreign key is neither a string or array of strings');
+      }
+
+      if (isObjectLiteral(propValue) || isArray(propValue)) {
+        object[propName] = await doAddAssociationFields(store, propValue, entity, callbacks);
+      }
+    }
+
+    return object;
+  }
+
+  if (isArray(data)) {
+    return await Promise.all(data.map(element => doAddAssociationFields(store, element, entity, callbacks)));
+  }
+
+  return data;
+}
+
+async function fetchNestedEntityForFk(store, parentEntity, foreignKeyField, foreignKey, callbacks) {
+  const associations = store.config.associationsByTypename[parentEntity.__typename];
+
+  const { ensureHasFields, handleMissing: _handleMissing } =
+    associations.find((a) => a.foreignKeyField === foreignKeyField);
+
+  let nestedEntity = store.getEntityById(foreignKey);
+
+  const mustFetch = !nestedEntity || (ensureHasFields && !hasObjectProperties(nestedEntity, ensureHasFields));
+
+  if (!mustFetch) {
+    return createProxy(nestedEntity, store.getEntityById.bind(store));
+  }
+
+  const handleMissing = (callbacks.onMissingRelation)
+    ? (foreignKey, entity) => callbacks.onMissingRelation(foreignKeyField, foreignKey, entity)
+    : _handleMissing;
+
+  if (!handleMissing) {
+    throw Error(`entity is missing or incomplete (1)`);
+  }
+
+  await handleMissing(foreignKey, parentEntity);
+
+  nestedEntity = store.getEntityById(foreignKey);
+
+  if (!nestedEntity) {
+    return null;
+  }
+
+  if (ensureHasFields && !hasObjectProperties(nestedEntity, ensureHasFields)) {
+    throw Error(`entity is missing or incomplete (2)`);
+  }
+
+  return createProxy(nestedEntity, store.getEntityById.bind(store));
+}
+
+async function fetchNestedEntitiesForFk(store, parentEntity, foreignKeyField, foreignKeys, callbacks) {
+  const associations = store.config.associationsByTypename[parentEntity.__typename];
+
+  const { ensureHasFields, handleMissing: _handleMissing } =
+    associations.find((a) => a.foreignKeyField === foreignKeyField);
+
+  const missingOrIncompleteEntityIds =
+    foreignKeys.filter((foreignKey) => {
+      const nestedEntity = store.getEntityById(foreignKey);
+      return !nestedEntity || (ensureHasFields && !hasObjectProperties(nestedEntity, ensureHasFields));
+    });
+
+  if (missingOrIncompleteEntityIds.length === 0) {
+    return foreignKeys
+      .map((foreignKey) => {
+        const nestedEntity = store.getEntityById(foreignKey);
+        return createProxy(nestedEntity, store.getEntityById.bind(store));
+      });
+  }
+
+  const handleMissing = (callbacks.onMissingRelation)
+    ? (missingOrIncompleteEntityIds, entity) => callbacks.onMissingRelation(foreignKeyField, missingOrIncompleteEntityIds, entity)
+    : _handleMissing;
+
+  if (!handleMissing) {
+    throw Error(`entity is missing or incomplete (3)`);
+  }
+
+  await handleMissing(missingOrIncompleteEntityIds, parentEntity);
+
+  const nestedEntities = foreignKeys.map((foreignKey) => store.getEntityById(foreignKey)).filter((e) => e);
+
+  const incompleteEntities =
+    nestedEntities.filter((nestedEntity) => {
+      return ensureHasFields && !hasObjectProperties(nestedEntity, ensureHasFields);
+    });
+
+  if (incompleteEntities.length > 0) {
+    throw Error(`entity is missing or incomplete (4)`);
+  }
+
+  return nestedEntities.map((nestedEntity) => createProxy(nestedEntity, store.getEntityById.bind(store)));
 }
