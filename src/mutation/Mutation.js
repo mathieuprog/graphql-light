@@ -35,9 +35,9 @@ export default class Mutation {
     const client = await this.client;
     let data = await client.request(this.queryDocument, variables);
 
-    const transformedData = this.transformer(data, variables);
+    data = this.transformer(data, variables);
 
-    if (transformedData) {
+    if (data) {
       const onFetchEntity =
         (entity) => this.onFetchEntity(entity, variables, data);
 
@@ -47,7 +47,7 @@ export default class Mutation {
       const onMissingRelation =
         (propName, propValue, object) => this.onMissingRelation(propName, propValue, object, variables, data);
 
-      await store.store(transformedData, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation });
+      ({ denormalizedData: data } = await store.store(data, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation }));
     }
 
     return data;
