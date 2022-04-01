@@ -3,6 +3,7 @@ import ObjectType from './constants/ObjectType';
 
 export default class Object {
   constructor(parent, type, name, options = {}) {
+    // use of _ to refer to parent node was inspired by https://github.com/djeang/parent-chaining
     this._ = parent;
     this.type = type;
     this.name = name;
