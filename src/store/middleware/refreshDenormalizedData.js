@@ -2,6 +2,7 @@ import UpdateType from '../../constants/UpdateType';
 import {
   isArray,
   isArrayOfEntities,
+  isArrayOfPrimitives,
   isEntity,
   isEntityProxy,
   isNullOrUndefined,
@@ -21,13 +22,27 @@ export default function refreshDenormalizedData(result, store) {
   return { ...result, denormalizedData, updatesToListenTo };
 }
 
-function doRefresh(entities, data, updatesToListenTo, nestedEntity = false, getDataFromStore = null) {
+function doRefresh(entities, data, updatesToListenTo, parentEntity = null, getDataFromStore = null) {
   if (isNullOrUndefined(data)) {
     return null;
   }
 
   if (isEntityProxy(data)) {
-    return data;
+    if (!parentEntity) {
+      throw new Error();
+    }
+
+    const cachedProxy = getDataFromStore();
+
+    if (cachedProxy === null) {
+      return null;
+    }
+
+    if (!isEntityProxy(cachedProxy)) {
+      throw new Error();
+    }
+
+    return cachedProxy;
   }
 
   if (isObjectLiteral(data)) {
@@ -36,19 +51,34 @@ function doRefresh(entities, data, updatesToListenTo, nestedEntity = false, getD
     const isEntity_ = isEntity(object);
 
     if (isEntity_) {
-      // nested entity, it might have changed ID
-      const cachedEntity = (nestedEntity) ? getDataFromStore() : entities[object.id];
+      let cachedEntity;
+      if (parentEntity) {
+        const cachedProxy = getDataFromStore();
 
-      if (!cachedEntity) {
-        return null;
+        if (cachedProxy === null) {
+          return null;
+        }
+
+        if (!isEntityProxy(cachedProxy)) {
+          throw new Error();
+        }
+
+        cachedEntity = entities[cachedProxy.id];
+      } else {
+        cachedEntity = entities[object.id];
+
+        if (!cachedEntity) {
+          return null;
+        }
       }
 
       getDataFromStore = () => cachedEntity;
-      nestedEntity = true;
+      parentEntity = cachedEntity;
     }
 
     for (let [propName, propValue] of Object.entries(object)) {
-      object[propName] = doRefresh(entities, propValue, updatesToListenTo, nestedEntity, () => getDataFromStore?.()?.[propName]);
+      object[propName] =
+        doRefresh(entities, propValue, updatesToListenTo, parentEntity, (parentEntity) ? (() => getDataFromStore()[propName]) : null);
     }
 
     if (isEntity_) {
@@ -68,7 +98,7 @@ function doRefresh(entities, data, updatesToListenTo, nestedEntity = false, getD
   if (isArray(data)) {
     let array = data;
 
-    if (!nestedEntity) {
+    if (!parentEntity) {
       if (isArrayOfEntities(array)) {
         return array.map(entity => doRefresh(entities, entity, updatesToListenTo));
       }
@@ -76,15 +106,33 @@ function doRefresh(entities, data, updatesToListenTo, nestedEntity = false, getD
       return array.map(element => doRefresh(entities, element, updatesToListenTo));
     }
 
-    // nested array
     if (isArrayOfEntities(array)) {
       return array
         .filter(entity => getDataFromStore().some(cachedEntity => cachedEntity.id === entity.id))
-        .map(entity => doRefresh(entities, entity, updatesToListenTo, true, () => getDataFromStore().find(cachedEntity => cachedEntity.id === entity.id)));
+        .map(entity => doRefresh(entities, entity, updatesToListenTo, parentEntity, () => getDataFromStore().find(cachedEntity => cachedEntity.id === entity.id)));
     } else {
-      return array.map((element, i) => doRefresh(entities, element, updatesToListenTo, true, () => getDataFromStore()?.[i]));
+      const cachedArray = getDataFromStore();
+      if (!isArray(cachedArray)) {
+        throw new Error();
+      }
+
+      if (isArrayOfPrimitives(array)) { // it can be a list of IDs that must be updated as an entity may have been deleted
+        return array.filter(element => cachedArray.includes(element));
+      }
+
+      return array.map((element, i) => doRefresh(entities, element, updatesToListenTo, parentEntity, () => getDataFromStore()[i]));
     }
   }
 
-  return getDataFromStore ? getDataFromStore() : data;
+  if (!getDataFromStore) {
+    return data;
+  }
+
+  const dataFromStore = getDataFromStore();
+
+  if (dataFromStore === undefined) {
+    throw new Error();
+  }
+
+  return dataFromStore;
 }

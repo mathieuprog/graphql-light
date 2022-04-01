@@ -176,10 +176,13 @@ test('store data having an object containing __typename but no id', async () => 
 
   const entities = { ...store.getEntities() };
 
-  await store.store(success);
+  const { denormalizedData } = await store.store(success);
 
   const newEntities = store.getEntities();
 
   expect(entities['person2']).toBeUndefined();
   expect(newEntities['person2'].name).toBe('John');
+
+  expect(denormalizedData['createSuccess'].person.id).toBe('person2');
+  expect(denormalizedData['createSuccess'].__typename).toBe('CreateSuccess');
 });

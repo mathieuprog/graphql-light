@@ -2,8 +2,11 @@ import UpdateType from '../../constants/UpdateType';
 import {
   isArray,
   isArrayOfEntities,
+  isArrayOfEntityProxies,
+  hasCorrespondingForeignKeyField,
   isEntity,
   isEntityProxy,
+  isForeignKeyField,
   isNullOrUndefined,
   isObjectLiteral,
   unique
@@ -37,8 +40,6 @@ export default function updateLinks(result, store) {
         links[nestedEntityId] = [...links[nestedEntityId], entityId];
       }
     });
-
-    entities[entityId] = updateReferences(entities[entityId], store);
   });
 
   deletedEntityIds.forEach(deletedEntityId => {
@@ -92,85 +93,39 @@ function getNestedEntities(data, nestedEntities = []) {
   return nestedEntities;
 }
 
-function updateReferences(entity, store) {
-  return doUpdateReferences(entity, entity, store);
-}
-
-function doUpdateReferences(data, entity, store) {
-  if (isNullOrUndefined(data)) {
-    return data;
-  }
-
-  if (isObjectLiteral(data)) {
-    data = { ...data };
-
-    let updateReferences = [];
-
-    for (let [propName, propValue] of Object.entries(data)) {
-      if (isEntityProxy(propValue)) {
-        const referenceField = getReferenceField(entity, propName, store);
-        if (referenceField) {
-          updateReferences = [
-            ...updateReferences,
-            () => data[referenceField] = propValue.id
-          ];
-        }
-
-        continue;
-      }
-
-      if (isArrayOfEntities(propValue)) {
-        const referenceField = getReferenceField(entity, propName, store);
-        if (referenceField) {
-          updateReferences = [
-            ...updateReferences,
-            () => data[referenceField] = propValue.map(({ id }) => id)
-          ];
-        }
-
-        continue;
-      }
-
-      data[propName] = doUpdateReferences(propValue, entity, store);
-    }
-
-    updateReferences.forEach(fun => fun());
-
-    return data;
-  }
-
-  if (isArray(data)) {
-    return data.map(element => doUpdateReferences(element, entity, store));
-  }
-
-  return data;
-}
-
 function removeDeletedEntity(entity, deletedEntityId, updates, store) {
   return doRemoveDeletedEntity(entity, entity, deletedEntityId, updates, store);
 }
 
-function doRemoveDeletedEntity(data, entity, deletedEntityId, updates, store) {
+function doRemoveDeletedEntity(data, entity, deletedEntityId, updates, store, rootPropName = null) {
   if (isNullOrUndefined(data)) {
     return data;
   }
 
   if (isObjectLiteral(data)) {
+    const isRootEntity = (data === entity);
     data = { ...data };
 
-    let updateReferences = [];
-
     for (let [propName, propValue] of Object.entries(data)) {
+      if (isRootEntity) {
+        rootPropName = propName;
+      }
+
       if (isEntityProxy(propValue)) {
         if (propValue.id === deletedEntityId) {
-          updates.push({ type: UpdateType.UPDATE_PROP, entity, propName });
+          updates.push({ type: UpdateType.UPDATE_PROP, entity, propName: rootPropName });
 
-          const referenceField = getReferenceField(entity, propName, store);
-          if (referenceField) {
-            updateReferences = [
-              ...updateReferences,
-              () => data[referenceField] = null
-            ];
+          if (hasCorrespondingForeignKeyField(store, entity, propName)) {
+            const associations = store.config.associationsByTypename[entity.__typename];
+
+            const { foreignKeyField } = associations.find(({ field }) => field === propName);
+            if (foreignKeyField !== propName) {
+              data[foreignKeyField] = null;
+
+              if (propName === rootPropName) {
+                updates.push({ type: UpdateType.UPDATE_PROP, entity, propName: foreignKeyField });
+              }
+            }
           }
 
           data[propName] = null;
@@ -179,19 +134,24 @@ function doRemoveDeletedEntity(data, entity, deletedEntityId, updates, store) {
         continue;
       }
 
-      if (isArrayOfEntities(propValue)) {
+      if (isArrayOfEntityProxies(propValue)) {
         const newPropValue = propValue.filter(entity => entity.id !== deletedEntityId);
 
         if (propValue.length !== newPropValue.length) {
-          const referenceField = getReferenceField(entity, propName, store);
-          if (referenceField) {
-            updateReferences = [
-              ...updateReferences,
-              () => data[referenceField] = newPropValue.map(({ id }) => id)
-            ];
+          if (hasCorrespondingForeignKeyField(store, entity, propName)) {
+            const associations = store.config.associationsByTypename[entity.__typename];
+
+            const { foreignKeyField } = associations.find(({ field }) => field === propName);
+            if (foreignKeyField !== propName) {
+              data[foreignKeyField] = newPropValue.map(({ id }) => id);
+
+              if (propName === rootPropName) {
+                updates.push({ type: UpdateType.UPDATE_PROP, entity, propName: foreignKeyField });
+              }
+            }
           }
 
-          updates.push({ type: UpdateType.UPDATE_PROP, entity, propName });
+          updates.push({ type: UpdateType.UPDATE_PROP, entity, propName: rootPropName });
         }
 
         data[propName] = newPropValue;
@@ -199,22 +159,50 @@ function doRemoveDeletedEntity(data, entity, deletedEntityId, updates, store) {
         continue;
       }
 
-      data[propName] = doRemoveDeletedEntity(propValue, entity, deletedEntityId, updates, store);
-    }
+      if ((!isRootEntity && isEntity(propValue)) || isArrayOfEntities(propValue)) {
+        throw new Error();
+      }
 
-    updateReferences.forEach(fun => fun());
+      if (isForeignKeyField(store, entity, propName)) {
+        continue;
+      }
+
+      if (isObjectLiteral(propValue) || isArray(propValue)) {
+        data[propName] = doRemoveDeletedEntity(propValue, entity, deletedEntityId, updates, store, rootPropName);
+      }
+    }
 
     return data;
   }
 
   if (isArray(data)) {
-    return data.map(element => doRemoveDeletedEntity(element, entity, deletedEntityId, updates, store));
+    return data.map(element => doRemoveDeletedEntity(element, entity, deletedEntityId, updates, store, rootPropName));
   }
 
   return data;
 }
 
-function getReferenceField(entity, propName, store) {
-  const references = store.config.transformers[entity.__typename]?.references ?? {};
-  return Object.keys(references).find(key => references[key].field === propName);
+function hookOnCompareObjects(a, b) {
+  if (isEntity(a) !== isEntity(b)) return { ne: true };
+
+  if (isEntity(a)) {
+    return {
+      eq: a.id === b.id,
+      ne: a.id !== b.id
+    };
+  }
+}
+
+function hookOnCompareArrays(a, b) {
+  if (isArrayOfEntities(a) || isArrayOfEntities(b)) {
+    if (a.length !== b.length) return { ne: true };
+
+    for (let entityA of a) {
+      const index = b.findIndex(entityB => entityA.id === entityB.id);
+      if (index === -1) return { ne: true };
+      b.splice(index, 1);
+    }
+
+    return { eq: true };
+  }
 }

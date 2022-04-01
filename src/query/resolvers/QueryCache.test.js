@@ -1,8 +1,11 @@
 import QueryCache from './QueryCache';
-import { isObjectSubset } from '../../utils';
+import { isArrayOfEntities, isArrayOfEntityProxies, isObjectSubset } from '../../utils';
 import { deleteNestedProp, setNestedProp } from 'dynamic-props-immutable';
 import checkMissingLinks from '../../store/middleware/checkMissingLinks';
 import checkInvalidReferences from '../../store/middleware/checkInvalidReferences';
+import Query from '../Query';
+import FetchStrategy from '../../constants/FetchStrategy';
+import OnUnobservedStrategy from '../../constants/OnUnobservedStrategy';
 
 const denormalizedData = {
   id: 'person1',
@@ -54,19 +57,16 @@ const denormalizedData = {
       address: {
         id: 'address1',
         __typename: 'Address',
-        street: 'Foo street'
+        street: 'Foo street',
+        phones: [
+          { id: 'phone1', __typename: 'Phone', number: '10' },
+          { id: 'phone2', __typename: 'Phone', number: '20' }
+        ]
       },
       phones: [
-        {
-          id: 'phone1',
-          __typename: 'Phone',
-          number: '10'
-        },
-        {
-          id: 'phone2',
-          __typename: 'Phone',
-          number: '20'
-        }
+        { id: 'phone1', __typename: 'Phone', number: '10' },
+        { id: 'phone2', __typename: 'Phone', number: '20' },
+        { id: 'phone3', __typename: 'Phone', number: '30' }
       ]
     }
   }
@@ -81,6 +81,9 @@ const onFetchArrayOfEntities = (propName, object) => {
       return 'override';
 
     case 'phones':
+      if (object?.__typename === 'Address') {
+        return 'append';
+      }
       return (object.address.id === 'address2') ? 'override' : 'append';
   }
 };
@@ -98,221 +101,344 @@ afterEach(() => {
   expect(checkInvalidReferences({}, store)).toEqual({});
 });
 
-test('applyUpdate', () => {
-  let queryCache = new QueryCache({
-    id: 'article1',
-    __typename: 'Article',
-    title: 'Foo'
-  });
+// test('applyUpdate', () => {
+//   let queryCache = new QueryCache({
+//     id: 'article1',
+//     __typename: 'Article',
+//     title: 'Foo'
+//   });
 
-  let update = { type: 'UPDATE_PROP', entity: { id: 'article1', title: 'Foo' }, propName: 'title' };
+//   let update = { type: 'UPDATE_PROP', entity: { id: 'article1', title: 'Foo' }, propName: 'title' };
 
-  queryCache.applyUpdate(update);
+//   queryCache.applyUpdate(update);
 
-  expect(queryCache.get()).toEqual({
-    id: 'article1',
-    __typename: 'Article',
-    title: 'Foo'
-  });
+//   expect(queryCache.get()).toEqual({
+//     id: 'article1',
+//     __typename: 'Article',
+//     title: 'Foo'
+//   });
 
-  update = { type: 'UPDATE_PROP', entity: { id: 'article1', title: 'Bar' }, propName: 'title' };
+//   update = { type: 'UPDATE_PROP', entity: { id: 'article1', title: 'Bar' }, propName: 'title' };
 
-  queryCache.applyUpdate(update);
+//   queryCache.applyUpdate(update);
 
-  expect(queryCache.get()).toEqual({
-    id: 'article1',
-    __typename: 'Article',
-    title: 'Bar'
-  });
+//   expect(queryCache.get()).toEqual({
+//     id: 'article1',
+//     __typename: 'Article',
+//     title: 'Bar'
+//   });
 
-  update = { type: 'DELETE_ENTITY', entity: { id: 'article1' } };
+//   update = { type: 'DELETE_ENTITY', entity: { id: 'article1' } };
 
-  queryCache.applyUpdate(update);
+//   queryCache.applyUpdate(update);
 
-  expect(queryCache.get()).toBeNull();
+//   expect(queryCache.get()).toBeNull();
 
-  queryCache = new QueryCache({
-    id: 'person1',
-    __typename: 'Person',
-    name: 'Mathieu',
-    contacts: {
-      dummy: {
-        address: {
-          id: 'address1',
-          __typename: 'Address',
-          street: 'Foo street'
-        },
-        phones: [
-          {
-            id: 'phone1',
-            __typename: 'Phone',
-            number: '10'
-          },
-          {
-            id: 'phone2',
-            __typename: 'Phone',
-            number: '20'
+//   queryCache = new QueryCache({
+//     id: 'person1',
+//     __typename: 'Person',
+//     name: 'Mathieu',
+//     contacts: {
+//       dummy: {
+//         address: {
+//           id: 'address1',
+//           __typename: 'Address',
+//           street: 'Foo street'
+//         },
+//         phones: [
+              // { id: 'phone1', __typename: 'Phone', number: '10' },
+              // { id: 'phone2', __typename: 'Phone', number: '20' }
+//         ]
+//       }
+//     }
+//   });
+
+//   update = { type: 'UPDATE_PROP', entity: { id: 'phone1', number: '11' }, propName: 'number' };
+
+//   queryCache.applyUpdate(update);
+
+//   expect(isObjectSubset(queryCache.get(), {
+//     contacts: { dummy: { phones: [{ id: 'phone1', number: '11' }, { id: 'phone2' }] } }
+//   })).toBeTruthy();
+
+//   update = { type: 'DELETE_ENTITY', entity: { id: 'phone1' } };
+
+//   queryCache.applyUpdate(update);
+
+//   expect(isObjectSubset(queryCache.get(), {
+//     contacts: { dummy: { phones: [{ id: 'phone2' }] } }
+//   })).toBeTruthy();
+// });
+
+test('applyUpdate (2)', async () => {
+  const client = {
+    request(_queryDocument, _variables) {
+      return {
+        id: 'person1',
+        __typename: 'Person',
+        name: 'Mathieu',
+        contacts: {
+          dummy: {
+            address: {
+              id: 'address1',
+              __typename: 'Address',
+              street: 'Street',
+              phones: [
+                { id: 'phone1', __typename: 'Phone', number: '10' }
+              ]
+            }
           }
-        ]
-      }
+        }
+      };
+    }
+  };
+
+  const query = new Query(client, null);
+
+  query.setOnUnobservedStrategy(_variables => OnUnobservedStrategy.KEEP_UPDATING);
+
+  query.setOnFetchArrayOfEntities((propName, _object) => {
+    switch (propName) {
+      case 'phones':
+        return 'append';
     }
   });
 
-  update = { type: 'UPDATE_PROP', entity: { id: 'phone1', number: '11' }, propName: 'number' };
+  await query.query({});
 
-  queryCache.applyUpdate(update);
+  let queryForVars = query.getQueryForVars({});
+  let queryCache = queryForVars.strategy.getCachedData();
 
-  expect(isObjectSubset(queryCache.get(), {
-    contacts: { dummy: { phones: [{ id: 'phone1', number: '11' }, { id: 'phone2' }] } }
-  })).toBeTruthy();
-
-  update = { type: 'DELETE_ENTITY', entity: { id: 'phone1' } };
-
-  queryCache.applyUpdate(update);
-
-  expect(isObjectSubset(queryCache.get(), {
-    contacts: { dummy: { phones: [{ id: 'phone2' }] } }
-  })).toBeTruthy();
-});
-
-test('refresh', async () => {
-  let queryCache = new QueryCache({
-    id: 'article1',
-    __typename: 'Article',
-    title: 'Foo'
-  });
-
-  expect(queryCache.get()).toEqual({
-    id: 'article1',
-    __typename: 'Article',
-    title: 'Foo'
-  });
-
-  queryCache.refresh();
-
-  expect(queryCache.get()).toEqual({
-    id: 'article1',
-    __typename: 'Article',
-    title: 'Foo'
-  });
-
-  let updatedDenormalizedData = setNestedProp`list[${0}].foo[${0}].articles[${0}].title`(denormalizedData, 'Foobar');
-
-  store.initialize();
-
-  store.setConfig({ debug: true });
-
-  await store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
-
-  expect(queryCache.get()).toEqual({
-    id: 'article1',
-    __typename: 'Article',
-    title: 'Foo'
-  });
-
-  queryCache.refresh();
-
-  expect(queryCache.get()).toEqual({
-    id: 'article1',
-    __typename: 'Article',
-    title: 'Foobar'
-  });
-
-  updatedDenormalizedData = deleteNestedProp`list[${0}].foo[${0}].articles[${0}]`(denormalizedData, { resizeArray: true });
-
-  store.initialize();
-
-  store.setConfig({ debug: true });
-
-  await store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
-
-  queryCache.refresh();
-
-  expect(queryCache.get()).toBeNull();
-
-  queryCache = new QueryCache({
-    id: 'person1',
-    __typename: 'Person',
-    name: 'Mathieu',
-    contacts: {
-      dummy: {
-        address: {
-          id: 'address1',
-          __typename: 'Address',
-          street: 'Foo street'
-        },
-        phones: [
-          {
-            id: 'phone1',
-            __typename: 'Phone',
-            number: '10'
-          },
-          {
-            id: 'phone2',
-            __typename: 'Phone',
-            number: '20'
+  client.request = (_queryDocument, _variables) => {
+    return {
+      id: 'person1',
+      __typename: 'Person',
+      name: 'John',
+      contacts: {
+        dummy: {
+          address: {
+            id: 'address1',
+            __typename: 'Address',
+            street: 'Updated street',
+            phones: [
+              { id: 'phone3', __typename: 'Phone', number: '30' }
+            ]
           }
-        ]
+        }
       }
+    }
+  };
+
+  const query2 = new Query(client, null);
+
+  query2.setOnFetchArrayOfEntities((propName, _object) => {
+    switch (propName) {
+      case 'phones':
+        return 'append';
     }
   });
 
-  expect(isObjectSubset(queryCache.get(), {
-    contacts: { dummy: { address: { id: 'address1' } } }
-  })).toBeTruthy();
+  await query2.query({ foo: 1 });
 
-  updatedDenormalizedData = setNestedProp`contacts.dummy.address.id`(denormalizedData, 'address10');
-  updatedDenormalizedData = setNestedProp`contacts.dummy.address.street`(updatedDenormalizedData, 'Some street');
+  queryForVars = query.getQueryForVars({});
+  queryCache = queryForVars.strategy.getCachedData();
 
-  store.initialize();
+  await query.query({});
 
-  store.setConfig({ debug: true });
+  queryForVars = query.getQueryForVars({});
+  queryCache = queryForVars.strategy.getCachedData();
 
-  await store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
 
-  queryCache.refresh();
 
-  expect(isObjectSubset(queryCache.get(), {
-    contacts: { dummy: { address: { id: 'address10', street: 'Some street' } } }
-  })).toBeTruthy();
+  // let queryCache = new QueryCache({
+  //   id: 'person1',
+  //   __typename: 'Person',
+  //   name: 'Mathieu',
+  //   contacts: {
+  //     dummy: {
+  //       address: {
+  //         id: 'address1',
+  //         __typename: 'Address',
+  //         street: 'Foo street',
+  //         phones: [
+  //           {
+  //             id: 'phone1',
+  //             __typename: 'Phone',
+  //             number: '10'
+  //           },
+  //           {
+  //             id: 'phone2',
+  //             __typename: 'Phone',
+  //             number: '20'
+  //           }
+  //         ]
+  //       },
+  //       phones: [
+  //         {
+  //           id: 'phone1',
+  //           __typename: 'Phone',
+  //           number: '10'
+  //         },
+  //         {
+  //           id: 'phone2',
+  //           __typename: 'Phone',
+  //           number: '20'
+  //         }
+  //       ]
+  //     }
+  //   }
+  // });
 
-  expect(isObjectSubset(queryCache.get(), {
-    contacts: { dummy: { phones: [
-      { id: 'phone1' },
-      { id: 'phone2' }
-    ] } }
-  })).toBeTruthy();
+  // update = { type: 'UPDATE_PROP', entity: { id: 'address1', phones: 'Bar' }, propName: 'phones' };
 
-  updatedDenormalizedData = setNestedProp`contacts.dummy.phones[${0}].id`(denormalizedData, 'phone10');
-  updatedDenormalizedData = setNestedProp`contacts.dummy.phones[${0}].number`(updatedDenormalizedData, '42');
+  // queryCache.applyUpdate(update);
 
-  store.initialize();
+  // expect(isObjectSubset(queryCache.get(), {
+  //   contacts: { dummy: { address: { id: 'address1', street: 'Bar' } } }
+  // })).toBeTruthy();
 
-  store.setConfig({ debug: true });
-
-  await store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
-
-  queryCache.refresh();
-
-  expect(isObjectSubset(queryCache.get(), {
-    contacts: { dummy: { phones: [
-      { id: 'phone2', number: '20' }
-    ] } }
-  })).toBeTruthy();
-
-  updatedDenormalizedData = deleteNestedProp`contacts.dummy.phones[${0}]`(denormalizedData, { resizeArray: true });
-
-  store.initialize();
-
-  store.setConfig({ debug: true });
-
-  await store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
-
-  queryCache.refresh();
-
-  expect(isObjectSubset(queryCache.get(), {
-    contacts: { dummy: { phones: [
-      { id: 'phone2', number: '20' }
-    ] } }
-  })).toBeTruthy();
+  // expect(isArrayOfEntities(queryCache.get().contacts.dummy.address.phones)).toBeTruthy();
+  // expect(isArrayOfEntityProxies(queryCache.get().contacts.dummy.address.phones)).toBeFalsy();
 });
+
+// test('refresh', async () => {
+//   let queryCache = new QueryCache({
+//     id: 'article1',
+//     __typename: 'Article',
+//     title: 'Foo'
+//   });
+
+//   expect(queryCache.get()).toEqual({
+//     id: 'article1',
+//     __typename: 'Article',
+//     title: 'Foo'
+//   });
+
+//   queryCache.refresh();
+
+//   expect(queryCache.get()).toEqual({
+//     id: 'article1',
+//     __typename: 'Article',
+//     title: 'Foo'
+//   });
+
+//   let updatedDenormalizedData = setNestedProp`list[${0}].foo[${0}].articles[${0}].title`(denormalizedData, 'Foobar');
+
+//   store.initialize();
+
+//   store.setConfig({ debug: true });
+
+//   await store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
+
+//   expect(queryCache.get()).toEqual({
+//     id: 'article1',
+//     __typename: 'Article',
+//     title: 'Foo'
+//   });
+
+//   queryCache.refresh();
+
+//   expect(queryCache.get()).toEqual({
+//     id: 'article1',
+//     __typename: 'Article',
+//     title: 'Foobar'
+//   });
+
+//   updatedDenormalizedData = deleteNestedProp`list[${0}].foo[${0}].articles[${0}]`(denormalizedData, { resizeArray: true });
+
+//   store.initialize();
+
+//   store.setConfig({ debug: true });
+
+//   await store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
+
+//   queryCache.refresh();
+
+//   expect(queryCache.get()).toBeNull();
+
+//   queryCache = new QueryCache({
+//     id: 'person1',
+//     __typename: 'Person',
+//     name: 'Mathieu',
+//     contacts: {
+//       dummy: {
+//         address: {
+//           id: 'address1',
+//           __typename: 'Address',
+//           street: 'Foo street'
+//         },
+//         phones: [
+//           {
+//             id: 'phone1',
+//             __typename: 'Phone',
+//             number: '10'
+//           },
+//           {
+//             id: 'phone2',
+//             __typename: 'Phone',
+//             number: '20'
+//           }
+//         ]
+//       }
+//     }
+//   });
+
+//   expect(isObjectSubset(queryCache.get(), {
+//     contacts: { dummy: { address: { id: 'address1' } } }
+//   })).toBeTruthy();
+
+//   updatedDenormalizedData = setNestedProp`contacts.dummy.address.id`(denormalizedData, 'address10');
+//   updatedDenormalizedData = setNestedProp`contacts.dummy.address.street`(updatedDenormalizedData, 'Some street');
+
+//   store.initialize();
+
+//   store.setConfig({ debug: true });
+
+//   await store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
+
+//   queryCache.refresh();
+
+//   expect(isObjectSubset(queryCache.get(), {
+//     contacts: { dummy: { address: { id: 'address10', street: 'Some street' } } }
+//   })).toBeTruthy();
+
+//   expect(isObjectSubset(queryCache.get(), {
+//     contacts: { dummy: { phones: [
+//       { id: 'phone1' },
+//       { id: 'phone2' }
+//     ] } }
+//   })).toBeTruthy();
+
+//   updatedDenormalizedData = setNestedProp`contacts.dummy.phones[${0}].id`(denormalizedData, 'phone10');
+//   updatedDenormalizedData = setNestedProp`contacts.dummy.phones[${0}].number`(updatedDenormalizedData, '42');
+
+//   store.initialize();
+
+//   store.setConfig({ debug: true });
+
+//   await store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
+
+//   queryCache.refresh();
+
+//   expect(isObjectSubset(queryCache.get(), {
+//     contacts: { dummy: { phones: [
+//       { id: 'phone2', number: '20' }
+//     ] } }
+//   })).toBeTruthy();
+
+//   updatedDenormalizedData = deleteNestedProp`contacts.dummy.phones[${0}]`(denormalizedData, { resizeArray: true });
+
+//   store.initialize();
+
+//   store.setConfig({ debug: true });
+
+//   await store.store(updatedDenormalizedData, { onFetchArrayOfEntities });
+
+//   queryCache.refresh();
+
+//   expect(isObjectSubset(queryCache.get(), {
+//     contacts: { dummy: { phones: [
+//       { id: 'phone2', number: '20' }
+//     ] } }
+//   })).toBeTruthy();
+// });

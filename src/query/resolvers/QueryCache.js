@@ -1,7 +1,9 @@
 import {
   isArray,
   isArrayOfEntities,
+  isArrayOfEntityProxies,
   isEntity,
+  isEntityProxy,
   isNullOrUndefined,
   isObjectLiteral
 } from '../../utils';
@@ -30,6 +32,10 @@ export default class QueryCache {
 
   doApplyUpdate(data, update) {
     if (isObjectLiteral(data)) {
+      if (isEntityProxy(data)) {
+        throw new Error();
+      }
+
       data = { ...data };
 
       if (isEntity(data) && data.id === update.entity.id && update.type === 'UPDATE_PROP') {
@@ -44,6 +50,10 @@ export default class QueryCache {
         }
       }
     } else if (isArray(data)) {
+      if (isArrayOfEntityProxies(data)) {
+        throw new Error();
+      }
+
       data = [...data];
 
       this.cleanArray(data, update);

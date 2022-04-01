@@ -5,7 +5,7 @@ import {
   isArray,
   isArrayOfObjectLiterals,
   isArrayOfType,
-  isAssociationField,
+  hasCorrespondingForeignKeyField,
   isEmptyArray,
   isEntity,
   isForeignKeyField,
@@ -21,7 +21,7 @@ export default async function proxifyReferences(result, store, callbacks = {}) {
   let { denormalizedData } = result;
 
   denormalizedData = addForeignKeyFields(store, denormalizedData);
-  denormalizedData = await addAssociationFields(store, denormalizedData, callbacks);
+  denormalizedData = await addObjectFields(store, denormalizedData, callbacks);
 
   return { ...result, denormalizedData };
 }
@@ -39,7 +39,7 @@ function addForeignKeyFields(store, data, entity = null) {
         continue;
       }
 
-      if (entity && isAssociationField(store, entity, propName)) {
+      if (entity && hasCorrespondingForeignKeyField(store, entity, propName)) {
         if (
           !isNullOrUndefined(propValue)
           && !isEntity(propValue)
@@ -87,11 +87,11 @@ function addForeignKeyFields(store, data, entity = null) {
   return data;
 }
 
-function addAssociationFields(store, data, callbacks) {
-  return doAddAssociationFields(store, data, null, callbacks)
+function addObjectFields(store, data, callbacks) {
+  return doAddObjectFields(store, data, null, callbacks)
 }
 
-async function doAddAssociationFields(store, data, entity, callbacks) {
+async function doAddObjectFields(store, data, entity, callbacks) {
   if (isObjectLiteral(data)) {
     const object = { ...data };
 
@@ -112,7 +112,7 @@ async function doAddAssociationFields(store, data, entity, callbacks) {
           throw new Error();
         }
 
-        if (object[field] && field !== propName) {
+        if (object[field] && field !== propName && (!isArray(object[field]) || isEmptyArray(object[field]) || object[field][0].__typename)) {
           const value = isArray(object[field]) ? object[field].map(({ id }) => id) : (object[field]?.id || null);
           if (!areObjectsEqual({ v: propValue }, { v: value })) {
             throw new Error(`association(s) don't correspond to foreign key(s)`);
@@ -151,7 +151,7 @@ async function doAddAssociationFields(store, data, entity, callbacks) {
       }
 
       if (isObjectLiteral(propValue) || isArray(propValue)) {
-        object[propName] = await doAddAssociationFields(store, propValue, entity, callbacks);
+        object[propName] = await doAddObjectFields(store, propValue, entity, callbacks);
       }
     }
 
@@ -159,7 +159,7 @@ async function doAddAssociationFields(store, data, entity, callbacks) {
   }
 
   if (isArray(data)) {
-    return await Promise.all(data.map(element => doAddAssociationFields(store, element, entity, callbacks)));
+    return await Promise.all(data.map(element => doAddObjectFields(store, element, entity, callbacks)));
   }
 
   return data;

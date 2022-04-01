@@ -8,6 +8,7 @@ import {
 
 export default function checkInvalidReferences(result, store) {
   doCheckInvalidReferences(store.getEntities(), store.getEntities());
+  doCheckInvalidReferences(result.denormalizedData, store.getEntities());
   return result;
 }
 
@@ -91,6 +92,10 @@ function doCheckInvalidReferences(data, entities, entity = null) {
 
         if (!isArray(data[field])) {
           throw new Error(`no field holding entities found for field \`${propName}\``);
+        }
+
+        if (propValue.some(id => id === undefined)) {
+          throw new Error(`\`${propName}\` contains \`undefined\``);
         }
 
         if (!areArraysEqual(data[field].map(({ id }) => id), propValue)) {

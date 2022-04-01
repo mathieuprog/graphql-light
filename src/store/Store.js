@@ -19,7 +19,11 @@ export default class Store {
     this.links = {};
     this.initializedAt = new Date();
     this.subscribers = new Set();
-    this.config = { transformers: {}, debug: true };
+    this.config = {
+      transformers: {},
+      associationsByTypename: {},
+      debug: true
+    };
   }
 
   subscribe(subscriber) {
@@ -58,7 +62,41 @@ export default class Store {
   }
 
   setConfig(newConfig) {
-    this.config = { ...this.config, ...newConfig };
+    if (newConfig.transformers) {
+      this.config = {
+        ...this.config,
+        associationsByTypename: this.buildAssociationData(newConfig.transformers)
+      };
+    }
+
+    this.config = {
+      ...this.config,
+      ...newConfig
+    };
+  }
+
+  buildAssociationData(transformers) {
+    const associationData = {};
+
+    for (const [typename, { references }] of Object.entries(transformers)) {
+      if (references) {
+        associationData[typename] = [];
+
+        for (const [key, { type, field, ...rest }] of Object.entries(references)) {
+          if (!type || !field) {
+            throw new Error('invalid associations config');
+          }
+          associationData[typename].push({
+            field,
+            foreignKeyField: key,
+            referencedTypename: type,
+            ...rest
+          });
+        }
+      }
+    }
+
+    return associationData;
   }
 
   getConfig() {

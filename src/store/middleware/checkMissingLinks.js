@@ -6,6 +6,8 @@ import {
 
 export default function checkMissingLinks(result, store) {
   doCheckMissingLinks(store.getEntities(), store.getEntities());
+
+  doCheckMissingLinks(result.denormalizedData, store.getEntities());
   return result;
 }
 

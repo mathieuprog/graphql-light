@@ -1,6 +1,6 @@
 import { removeEntityById, updateEntity } from './normalize';
 import store from '../index';
-import { areArraysEqual, deepFreeze } from '../../utils';
+import { deepFreeze } from '../../utils';
 import checkMissingLinks from './checkMissingLinks';
 import checkInvalidReferences from './checkInvalidReferences';
 
@@ -9,7 +9,24 @@ const denormalizedData = deepFreeze({
   __typename: 'Person',
   name: 'Mathieu',
   age: 37,
-  articles: [
+  test: {
+    article: {
+      id: 'article10',
+      __typename: 'Article',
+      title: 'Article 10',
+      authors: [{
+        id: 'author1',
+        __typename: 'Author',
+        name: 'Patrick'
+      }]
+    },
+    authors: [{
+      id: 'author1',
+      __typename: 'Author',
+      name: 'Patrick'
+    }]
+  },
+  foo: { articles: [
     {
       id: 'article1',
       __typename: 'Article',
@@ -31,13 +48,43 @@ const denormalizedData = deepFreeze({
       id: 'article2',
       __typename: 'Article',
       title: 'World!',
-      comments: []
+      comments: [],
+      authors: [{
+        id: 'author1',
+        __typename: 'Author',
+        name: 'Patrick'
+      }]
     },
     {
       id: 'article3',
       __typename: 'Article',
       title: 'Foo',
       comments: []
+    }
+  ] },
+  friends: [
+    {
+      id: 'friend1',
+      __typename: 'Friend',
+      name: 'John',
+      recommendations: [
+        {
+          id: 'recommendation1',
+          __typename: 'Recommendation',
+          text: 'A recommendation'
+        },
+        {
+          id: 'recommendation2',
+          __typename: 'Recommendation',
+          text: 'Another recommendation'
+        },
+      ]
+    },
+    {
+      id: 'friend2',
+      __typename: 'Friend',
+      name: 'James',
+      recommendations: []
     }
   ],
   contacts: {
@@ -110,9 +157,64 @@ beforeEach(async () => {
 
   store.setConfig({ debug: true });
 
+  store.setConfig({ transformers: {
+    Person: {
+      references: {
+        articleId: {
+          type: 'Article',
+          field: 'article'
+        },
+        articleIds: {
+          type: 'Article',
+          field: 'articles'
+        },
+        friendIds: {
+          type: 'Friend',
+          field: 'friends'
+        },
+        phoneIds: {
+          type: 'Phone',
+          field: 'phones'
+        },
+        addressId: {
+          type: 'Address',
+          field: 'address'
+        }
+      }
+    },
+    Friend: {
+      references: {
+        recommendationIds: {
+          type: 'Recommendation',
+          field: 'recommendations'
+        }
+      }
+    },
+    Article: {
+      references: {
+        commentIds: {
+          type: 'Comment',
+          field: 'comments'
+        }
+      }
+    }
+  } });
+
   const onFetchArrayOfEntities = (propName, object) => {
     switch (propName) {
       case 'articles':
+        return 'append';
+
+      case 'authors':
+        return 'append';
+
+      case 'addresses':
+        return 'append';
+
+      case 'friends':
+        return 'append';
+
+      case 'recommendations':
         return 'append';
 
       case 'comments':
@@ -125,7 +227,7 @@ beforeEach(async () => {
 
   await store.store(denormalizedData, { onFetchArrayOfEntities });
 
-  store.store({
+  await store.store({
     id: 'person2',
     __typename: 'Person',
     name: 'David',
@@ -135,7 +237,19 @@ beforeEach(async () => {
         id: 'article1',
         __typename: 'Article'
       }
-    ]
+    ],
+    articleId: 'article1'
+  }, { onFetchArrayOfEntities });
+
+  await store.store({
+    id: 'person3',
+    __typename: 'Person',
+    name: 'Eric',
+    age: 30,
+    article: {
+      id: 'article5',
+      __typename: 'Article'
+    }
   }, { onFetchArrayOfEntities });
 });
 
@@ -149,8 +263,15 @@ test('collect updates', async () => {
     id: 'person1',
     __typename: 'Person',
     age: 37,
+    test: {
+      article: {
+        id: 'article10',
+        __typename: 'Article',
+        title: 'Article 10'
+      }
+    },
     name: 'John', // update
-    articles: [
+    foo: { articles: [
       {
         id: 'article1',
         __typename: 'Article',
@@ -179,6 +300,19 @@ test('collect updates', async () => {
         __typename: 'Article',
         comments: [],
         title: 'Another article' // update
+      }
+    ] },
+    friends: [
+      {
+        id: 'friend1',
+        __typename: 'Friend',
+        recommendations: [
+          {
+            id: 'recommendation3', // update
+            __typename: 'Recommendation',
+            text: 'Recommendation'
+          },
+        ]
       }
     ],
     contacts: {
@@ -239,17 +373,34 @@ test('collect updates', async () => {
     }
 
     if (normalizedEntity.id === 'person1') {
-      return updateEntity(
-        normalizedEntity,
-        'articles',
-        articles => articles.filter(({ id }) => id !== 'article2')
-      );
+      return [
+        updateEntity(
+          normalizedEntity,
+          'foo',
+          (foo) => ({
+            ...foo,
+            articles: foo.articles.filter(({ id }) => id !== 'article2')
+          })
+        ),
+        updateEntity(
+          store.entities.person3, 'articleId', (_articleId) => 'article3'
+        )
+      ]
     }
   };
 
   const onFetchArrayOfEntities = (propName, object) => {
     switch (propName) {
       case 'articles':
+        return 'append';
+
+      case 'authors':
+        return 'append';
+
+      case 'friends':
+        return 'append';
+
+      case 'recommendations':
         return 'append';
 
       case 'comments':
@@ -261,80 +412,74 @@ test('collect updates', async () => {
   };
 
   expect(store.entities['article1']).toBeTruthy();
-  expect(store.entities['person1'].articles.length).toBe(3);
+  expect(store.entities['person1'].foo.articles.length).toBe(3);
   expect(store.entities['person2'].articles.length).toBe(1);
 
   const { updates, updatesToListenTo } = await store.store(entity, { onFetchEntity, onFetchArrayOfEntities });
 
   expect(store.entities['article1']).toBeUndefined();
-  expect(store.entities['person1'].articles.length).toBe(2);
+  expect(store.entities['person1'].foo.articles.length).toBe(2);
   expect(store.entities['person2'].articles.length).toBe(0);
 
   const { updates: updates_, updatesToListenTo: updatesToListenTo_ } = replaceEntityByItsId({ updates, updatesToListenTo });
 
   const expectedUpdates = [
-    { type: 'UPDATE_PROP', entity: 'person1', propName: 'name' },
-    { type: 'UPDATE_PROP', entity: 'person1', propName: 'articles' },
     { type: 'DELETE_ENTITY', entity: 'article1' },
     { type: 'CREATE_ENTITY', entity: 'article4' },
-    { type: 'UPDATE_PROP', entity: 'person1', propName: 'contacts' },
+    { type: 'CREATE_ENTITY', entity: 'recommendation3' },
+    { type: 'UPDATE_PROP', entity: 'friend1', propName: 'recommendations' },
+    { type: 'UPDATE_PROP', entity: 'friend1', propName: 'recommendationIds' },
     { type: 'CREATE_ENTITY', entity: 'address2' },
     { type: 'CREATE_ENTITY', entity: 'phone3' },
-    {
-      type: 'UPDATE_PROP',
-      entity: 'person1',
-      propName: 'otherContacts'
-    },
-    {
-      type: 'UPDATE_PROP',
-      entity: 'person1',
-      propName: 'objectLiteral'
-    },
-    {
-      type: 'UPDATE_PROP',
-      entity: 'person1',
-      propName: 'arrayOfPrimitives'
-    },
-    { type: 'UPDATE_PROP', entity: 'person2', propName: 'articles' }
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'test' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'name' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'foo' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'contacts' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'otherContacts' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'objectLiteral' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'arrayOfPrimitives' },
+    { type: 'UPDATE_PROP', entity: 'person3', propName: 'articleId' },
+    { type: 'UPDATE_PROP', entity: 'person3', propName: 'article' },
+    { type: 'UPDATE_PROP', entity: 'person2', propName: 'articleIds' },
+    { type: 'UPDATE_PROP', entity: 'person2', propName: 'articles' },
+    { type: 'UPDATE_PROP', entity: 'person2', propName: 'article' },
+    { type: 'UPDATE_PROP', entity: 'person2', propName: 'articleId' }
   ];
 
-  expect(
-    areArraysEqual(
-      expectedUpdates,
-      updates_
-    )
-  ).toBeTruthy();
+  expect(expectedUpdates).toEqual(updates_);
 
   const expectedUpdatesToListenTo = [
-    { type: 'DELETE_ENTITY', entity: 'person1' },
-    { type: 'UPDATE_PROP', entity: 'person1', propName: 'name' },
-    { type: 'UPDATE_PROP', entity: 'person1', propName: 'age' },
-    { type: 'UPDATE_PROP', entity: 'person1', propName: 'articles' },
-    { type: 'DELETE_ENTITY', entity: 'article4' },
-    { type: 'UPDATE_PROP', entity: 'article4', propName: 'title' },
+    { type: 'UPDATE_PROP', entity: 'article10', propName: 'title' },
+    { type: 'DELETE_ENTITY', entity: 'article10' },
     { type: 'UPDATE_PROP', entity: 'article4', propName: 'comments' },
-    { type: 'UPDATE_PROP', entity: 'person1', propName: 'contacts' },
-    { type: 'DELETE_ENTITY', entity: 'address2' },
+    { type: 'UPDATE_PROP', entity: 'article4', propName: 'title' },
+    { type: 'UPDATE_PROP', entity: 'article4', propName: 'commentIds' },
+    { type: 'DELETE_ENTITY', entity: 'article4' },
+    { type: 'UPDATE_PROP', entity: 'recommendation3', propName: 'text' },
+    { type: 'DELETE_ENTITY', entity: 'recommendation3' },
+    { type: 'UPDATE_PROP', entity: 'friend1', propName: 'recommendations' },
+    { type: 'UPDATE_PROP', entity: 'friend1', propName: 'recommendationIds' },
+    { type: 'DELETE_ENTITY', entity: 'friend1' },
     { type: 'UPDATE_PROP', entity: 'address2', propName: 'street' },
-    { type: 'DELETE_ENTITY', entity: 'phone3' },
+    { type: 'DELETE_ENTITY', entity: 'address2' },
     { type: 'UPDATE_PROP', entity: 'phone3', propName: 'number' },
-    { type: 'UPDATE_PROP', entity: 'person1', propName: 'otherContacts' },
-    { type: 'DELETE_ENTITY', entity: 'address1' },
+    { type: 'DELETE_ENTITY', entity: 'phone3' },
     { type: 'UPDATE_PROP', entity: 'address1', propName: 'street' },
+    { type: 'DELETE_ENTITY', entity: 'address1' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'age' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'test' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'name' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'foo' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'friends' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'contacts' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'otherContacts' },
     { type: 'UPDATE_PROP', entity: 'person1', propName: 'objectLiteral' },
-    {
-      type: 'UPDATE_PROP',
-      entity: 'person1',
-      propName: 'arrayOfPrimitives'
-    }
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'arrayOfPrimitives' },
+    { type: 'UPDATE_PROP', entity: 'person1', propName: 'friendIds' },
+    { type: 'DELETE_ENTITY', entity: 'person1' }
   ];
 
-  expect(
-    areArraysEqual(
-      expectedUpdatesToListenTo,
-      updatesToListenTo_
-    )
-  ).toBeTruthy();
+  expect(expectedUpdatesToListenTo).toEqual(updatesToListenTo_);
 });
 
 function replaceEntityByItsId({ updates, updatesToListenTo }) {

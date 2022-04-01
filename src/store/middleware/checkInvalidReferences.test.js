@@ -1,8 +1,8 @@
 import checkInvalidReferences from './checkInvalidReferences';
 import store from '../index';
-import { removeEntityById } from './normalize';
+import { removeEntityById, updateEntity } from './normalize';
 import checkMissingLinks from './checkMissingLinks';
-import { areArraysEqual } from '../../utils';
+import createProxy from '../createProxy';
 
 beforeEach(async () => {
   store.initialize();
@@ -23,9 +23,6 @@ beforeEach(async () => {
         addressIds: {
           type: 'Address',
           field: 'addresses'
-        },
-        addresses: {
-          type: 'Address'
         },
         typeId: {
           type: 'Type',
@@ -63,6 +60,13 @@ beforeEach(async () => {
     __typename: 'Type'
   });
 
+  const onFetchArrayOfEntities = (propName, _object) => {
+    switch (propName) {
+      case 'addressIds':
+        return 'append';
+    }
+  };
+
   await store.store({
     id: 'person1',
     __typename: 'Person',
@@ -70,7 +74,7 @@ beforeEach(async () => {
     bar: [[{ addressIds: ['address1'] }]],
     addressId: 'address1',
     typeId: 'type1'
-  });
+  }, { onFetchArrayOfEntities });
 });
 
 afterEach(() => {
@@ -108,7 +112,7 @@ test('array of ids doesn\'t match', () => {
   expect(() => checkInvalidReferences({}, store)).toThrow(/don't match/);
 });
 
-test('invalid reference after deleting entity', async () => {
+test('after deleting entity', async () => {
   const entity = {
     id: 'person1',
     __typename: 'Person',
@@ -141,14 +145,16 @@ test('invalid reference after deleting entity', async () => {
     });
   };
 
-  await store.store(entity, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation });
+  const { denormalizedData } = await store.store(entity, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation });
 
-  const entities = store.getEntities();
-
-  expect(areArraysEqual(entities.person1.bar[0][0].addresses, [{ id: 'address2' }]));
+  expect(store.entities.address1).toBeUndefined();
+  expect(store.entities.person1.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(store.entities.person1.bar[0][0].addressIds).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addressIds).toEqual(['address2']);
 });
 
-test('invalid reference after deleting entity (2)', async () => {
+test('after deleting entity (2)', async () => {
   const entity = {
     id: 'person1',
     __typename: 'Person',
@@ -157,7 +163,7 @@ test('invalid reference after deleting entity (2)', async () => {
     bar: [[{ addresses: [{ id: 'address1' }, { id: 'address2' }] }]]
   };
 
-  const onFetchEntity = normalizedEntity => {
+  const onFetchEntity = (normalizedEntity) => {
     if (normalizedEntity.id === 'address1') {
       return removeEntityById(normalizedEntity.id);
     }
@@ -178,14 +184,18 @@ test('invalid reference after deleting entity (2)', async () => {
     });
   };
 
-  await store.store(entity, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation });
+  const { denormalizedData } = await store.store(entity, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation });
 
-  const entities = store.getEntities();
-
-  expect(areArraysEqual(entities.person1.bar[0][0].addresses, [{ id: 'address2' }]));
+  expect(store.entities.address1).toBeUndefined();
+  expect(store.entities.person1.addressId).toBeNull();
+  expect(store.entities.person1.address).toBeNull();
+  expect(store.entities.person1.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(store.entities.person1.bar[0][0].addressIds).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addressIds).toEqual(['address2']);
 });
 
-test('invalid reference after deleting entity (3)', async () => {
+test('after deleting entity (3)', async () => {
   const entity = {
     id: 'person1',
     __typename: 'Person',
@@ -215,11 +225,284 @@ test('invalid reference after deleting entity (3)', async () => {
     });
   };
 
-  await store.store(entity, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation });
+  const { denormalizedData } = await store.store(entity, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation });
 
-  const entities = store.getEntities();
+  expect(store.entities.address1).toBeUndefined();
+  expect(store.entities.person1.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(store.entities.person1.bar[0][0].addressIds).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addressIds).toEqual(['address2']);
+});
 
-  expect(areArraysEqual(entities.person1.bar[0][0].addresses, [{ id: 'address2' }]));
+test('after unlinking entity', async () => {
+  const entity = {
+    id: 'person1',
+    __typename: 'Person',
+    name: 'John',
+    addressId: 'address1',
+    bar: [[{ addressIds: ['address1', 'address2'] }]],
+    foo: [{
+      phoneId: 'phone1'
+    }]
+  };
+
+  const onFetchEntity = normalizedEntity => {
+    if (normalizedEntity.id === 'person1') {
+      return updateEntity(normalizedEntity, 'bar', (bar) => {
+        return [[{
+          ...bar[0][0],
+          addresses: [...bar[0][0].addresses.filter(({ id }) => id !== 'address1')]
+        }]];
+      });
+    }
+  };
+
+  const onFetchArrayOfEntities = (propName, _object) => {
+    switch (propName) {
+      case 'addresses':
+        return 'append';
+    }
+  };
+
+  const onMissingRelation = (_propName, _propValue, _object, _variables, _data) => {
+    return store.store({
+      id: 'address2',
+      __typename: 'Address',
+      street: 'Bar'
+    });
+  };
+
+  const { denormalizedData } = await store.store(entity, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation });
+
+  expect(store.entities.address1).toBeTruthy();
+  expect(store.entities.person1.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(store.entities.person1.bar[0][0].addressIds).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addressIds).toEqual(['address2']);
+});
+
+test('after unlinking entity (2)', async () => {
+  const entity = {
+    id: 'person1',
+    __typename: 'Person',
+    name: 'John',
+    addressId: 'address1',
+    bar: [[{ addresses: [{ id: 'address1' }, { id: 'address2' }] }]]
+  };
+
+  const onFetchEntity = normalizedEntity => {
+    if (normalizedEntity.id === 'person1') {
+      return updateEntity(normalizedEntity, 'bar', (bar) => {
+        return [[{
+          ...bar[0][0],
+          addresses: [...bar[0][0].addresses.filter(({ id }) => id !== 'address1')]
+        }]];
+      });
+    }
+  };
+
+  const onFetchArrayOfEntities = (propName, _object) => {
+    switch (propName) {
+      case 'addresses':
+        return 'append';
+    }
+  };
+
+  const onMissingRelation = (_propName, _propValue, _object, _variables, _data) => {
+    return store.store({
+      id: 'address2',
+      __typename: 'Address',
+      street: 'Bar'
+    });
+  };
+
+  const { denormalizedData } = await store.store(entity, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation });
+
+  expect(store.entities.address1).toBeTruthy();
+  expect(store.entities.person1.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(store.entities.person1.bar[0][0].addressIds).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addressIds).toEqual(['address2']);
+});
+
+test('after unlinking entity (3)', async () => {
+  const entity = {
+    id: 'person1',
+    __typename: 'Person',
+    name: 'John',
+    addressId: 'address1',
+    bar: [[{ addresses: [{ id: 'address1', __typename: 'Address' }, { id: 'address2', __typename: 'Address' }] }]]
+  };
+
+  const onFetchEntity = normalizedEntity => {
+    if (normalizedEntity.id === 'person1') {
+      return updateEntity(normalizedEntity, 'bar', (bar) => {
+        return [[{
+          ...bar[0][0],
+          addresses: [...bar[0][0].addresses.filter(({ id }) => id !== 'address1')]
+        }]];
+      });
+    }
+  };
+
+  const onFetchArrayOfEntities = (propName, _object) => {
+    switch (propName) {
+      case 'addresses':
+        return 'append';
+    }
+  };
+
+  const onMissingRelation = (_propName, _propValue, _object, _variables, _data) => {
+    return store.store({
+      id: 'address2',
+      __typename: 'Address',
+      street: 'Bar'
+    });
+  };
+
+  const { denormalizedData } = await store.store(entity, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation });
+
+  expect(store.entities.address1).toBeTruthy();
+  expect(store.entities.person1.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(store.entities.person1.bar[0][0].addressIds).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addressIds).toEqual(['address2']);
+});
+
+test('after changing nested id', async () => {
+  const entity = {
+    id: 'person1',
+    __typename: 'Person',
+    name: 'John',
+    addressId: 'address1'
+  };
+
+  const onFetchEntity = (normalizedEntity) => {
+    if (normalizedEntity.id === 'person1') {
+      return updateEntity(normalizedEntity, 'addressId', () => 'address3');
+    }
+  };
+
+  const { denormalizedData } = await store.store(entity, { onFetchEntity });
+
+  expect(store.entities.person1.addressId).toBe('address3');
+  expect(store.entities.person1.address.id).toBe('address3');
+  expect(denormalizedData.address.id).toBe('address3');
+});
+
+test('after changing nested entity', async () => {
+  const entity = {
+    id: 'person1',
+    __typename: 'Person',
+    name: 'John',
+    addressId: 'address1'
+  };
+
+  const onFetchEntity = (normalizedEntity) => {
+    if (normalizedEntity.id === 'person1') {
+      return updateEntity(normalizedEntity, 'address', () => createProxy(store.getEntityById('address3')), store.getEntityById.bind(store));
+    }
+  };
+
+  const { denormalizedData } = await store.store(entity, { onFetchEntity });
+
+  expect(store.entities.person1.addressId).toBe('address3');
+  expect(store.entities.person1.address.id).toBe('address3');
+  expect(denormalizedData.address.id).toBe('address3');
+});
+
+test('after unlinking entity by id', async () => {
+  const entity = {
+    id: 'person1',
+    __typename: 'Person',
+    name: 'John',
+    addressId: 'address1',
+    bar: [[{ addressIds: ['address1', 'address2'] }]],
+    foo: [{
+      phoneId: 'phone1'
+    }]
+  };
+
+  const onFetchEntity = (normalizedEntity) => {
+    if (normalizedEntity.id === 'person1') {
+      return updateEntity(normalizedEntity, 'bar', (bar) => {
+        return [[{
+          ...bar[0][0],
+          addressIds: [...bar[0][0].addressIds.filter(id => id !== 'address1')]
+        }]];
+      });
+    }
+  };
+
+  const onFetchArrayOfEntities = (propName, _object) => {
+    switch (propName) {
+      case 'addressIds':
+        return 'append';
+    }
+  };
+
+  const onMissingRelation = (_propName, _propValue, _object, _variables, _data) => {
+    return store.store({
+      id: 'address2',
+      __typename: 'Address',
+      street: 'Bar'
+    });
+  };
+
+  const { denormalizedData } = await store.store(entity, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation });
+
+  expect(store.entities.address1).toBeTruthy();
+  expect(store.entities.person1.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(store.entities.person1.bar[0][0].addressIds).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addressIds).toEqual(['address2']);
+});
+
+test('after unlinking entity', async () => {
+  const entity = {
+    id: 'person1',
+    __typename: 'Person',
+    name: 'John',
+    addressId: 'address1',
+    bar: [[{ addressIds: ['address1', 'address2'] }]],
+    foo: [{
+      phoneId: 'phone1'
+    }]
+  };
+
+  const onFetchEntity = (normalizedEntity) => {
+    if (normalizedEntity.id === 'person1') {
+      return updateEntity(normalizedEntity, 'bar', (bar) => {
+        return [[{
+          ...bar[0][0],
+          addresses: [...bar[0][0].addresses.filter(({ id }) => id !== 'address1')]
+        }]];
+      });
+    }
+  };
+
+  const onFetchArrayOfEntities = (propName, _object) => {
+    switch (propName) {
+      case 'addressIds':
+        return 'append';
+    }
+  };
+
+  const onMissingRelation = (_propName, _propValue, _object, _variables, _data) => {
+    return store.store({
+      id: 'address2',
+      __typename: 'Address',
+      street: 'Bar'
+    });
+  };
+
+  const { denormalizedData } = await store.store(entity, { onFetchEntity, onFetchArrayOfEntities, onMissingRelation });
+
+  expect(store.entities.address1).toBeTruthy();
+  expect(store.entities.person1.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address2']);
+  expect(store.entities.person1.bar[0][0].addressIds).toEqual(['address2']);
+  expect(denormalizedData.bar[0][0].addressIds).toEqual(['address2']);
 });
 
 test('change referenced entity', async () => {
@@ -231,9 +514,10 @@ test('change referenced entity', async () => {
 
   expect(store.entities.person1.typeId).toBe('type1');
 
-  await store.store(entity);
+  const { denormalizedData } = await store.store(entity);
 
   expect(store.entities.person1.typeId).toBe('type2');
+  expect(denormalizedData.typeId).toBe('type2');
 });
 
 test('change referenced entity (2)', async () => {
@@ -245,9 +529,10 @@ test('change referenced entity (2)', async () => {
     type: { id: 'type2', __typename: 'Type' }
   };
 
-  await store.store(entity);
+  const { denormalizedData } = await store.store(entity);
 
   expect(store.entities.person1.typeId).toBe('type2');
+  expect(denormalizedData.typeId).toBe('type2');
 });
 
 test('invalid reference after changing nested entity', async () => {
@@ -264,10 +549,13 @@ test('invalid reference after changing nested entity', async () => {
     }
   };
 
-  await store.store(entity);
+  const { denormalizedData } = await store.store(entity);
 
   expect(store.entities.person1.addressId).toBe('address3');
   expect(store.entities.person1.address.id).toBe('address3');
+
+  expect(denormalizedData.addressId).toBe('address3');
+  expect(denormalizedData.address.id).toBe('address3');
 });
 
 test('invalid reference after changing nested entity (2)', async () => {
@@ -281,15 +569,18 @@ test('invalid reference after changing nested entity (2)', async () => {
     addressId: 'address3'
   };
 
-  await store.store(entity);
+  const { denormalizedData } = await store.store(entity);
 
   expect(store.entities.person1.addressId).toBe('address3');
   expect(store.entities.person1.address.id).toBe('address3');
+
+  expect(denormalizedData.addressId).toBe('address3');
+  expect(denormalizedData.address.id).toBe('address3');
 });
 
 test('invalid reference after changing nested array of entities', async () => {
-  expect(areArraysEqual(store.entities.person1.bar[0][0].addressIds, ['address1']));
-  expect(areArraysEqual(store.entities.person1.bar[0][0].addresses, [{ id: 'address1' }]));
+  expect(store.entities.person1.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address1']);
+  expect(store.entities.person1.bar[0][0].addressIds).toEqual(['address1']);
 
   const entity = {
     id: 'person1',
@@ -305,15 +596,17 @@ test('invalid reference after changing nested array of entities', async () => {
     }
   };
 
-  await store.store(entity, { onFetchArrayOfEntities });
+  const { denormalizedData } = await store.store(entity, { onFetchArrayOfEntities });
 
-  expect(areArraysEqual(store.entities.person1.bar[0][0].addressIds, ['address1', 'address3']));
-  expect(areArraysEqual(store.entities.person1.bar[0][0].addresses, [{ id: 'address1' }, { id: 'address3' }]));
+  expect(store.entities.person1.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address1', 'address3']);
+  expect(denormalizedData.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address3']);
+  expect(store.entities.person1.bar[0][0].addressIds).toEqual(['address1', 'address3']);
+  expect(denormalizedData.bar[0][0].addressIds).toEqual(['address3']);
 });
 
 test('invalid reference after changing nested array of entities (2)', async () => {
-  expect(areArraysEqual(store.entities.person1.bar[0][0].addressIds, ['address1']));
-  expect(areArraysEqual(store.entities.person1.bar[0][0].addresses, [{ id: 'address1' }]));
+  expect(store.entities.person1.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address1']);
+  expect(store.entities.person1.bar[0][0].addressIds).toEqual(['address1']);
 
   const entity = {
     id: 'person1',
@@ -329,15 +622,17 @@ test('invalid reference after changing nested array of entities (2)', async () =
     }
   };
 
-  await store.store(entity, { onFetchArrayOfEntities });
+  const { denormalizedData } = await store.store(entity, { onFetchArrayOfEntities });
 
-  expect(areArraysEqual(store.entities.person1.bar[0][0].addressIds, ['address1', 'address3']));
-  expect(areArraysEqual(store.entities.person1.bar[0][0].addresses, [{ id: 'address1' }, { id: 'address3' }]));
+  expect(store.entities.person1.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address1', 'address3']);
+  expect(denormalizedData.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address3']);
+  expect(store.entities.person1.bar[0][0].addressIds).toEqual(['address1', 'address3']);
+  expect(denormalizedData.bar[0][0].addressIds).toEqual(['address3']);
 });
 
 test('invalid reference after changing nested array of entities (3)', async () => {
-  expect(areArraysEqual(store.entities.person1.bar[0][0].addressIds, ['address1']));
-  expect(areArraysEqual(store.entities.person1.bar[0][0].addresses, [{ id: 'address1' }]));
+  expect(store.entities.person1.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address1']);
+  expect(store.entities.person1.bar[0][0].addressIds).toEqual(['address1']);
 
   const entity = {
     id: 'person1',
@@ -353,8 +648,10 @@ test('invalid reference after changing nested array of entities (3)', async () =
     }
   };
 
-  await store.store(entity, { onFetchArrayOfEntities });
+  const { denormalizedData } = await store.store(entity, { onFetchArrayOfEntities });
 
-  expect(areArraysEqual(store.entities.person1.bar[0][0].addressIds, ['address1', 'address3']));
-  expect(areArraysEqual(store.entities.person1.bar[0][0].addresses, [{ id: 'address1' }, { id: 'address3' }]));
+  expect(store.entities.person1.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address1', 'address3']);
+  expect(denormalizedData.bar[0][0].addresses.map(({ id }) => id)).toEqual(['address3']);
+  expect(store.entities.person1.bar[0][0].addressIds).toEqual(['address1', 'address3']);
+  expect(denormalizedData.bar[0][0].addressIds).toEqual(['address3']);
 });
