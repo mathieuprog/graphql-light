@@ -6,11 +6,11 @@ import UpdateType from '../constants/UpdateType';
 export default class Query extends AbstractQuery {
   // resolver: function retrieving the data from the cache and from the server's response data
   // transformer: function transforming data before storage
-  constructor(client, queryDocument) {
+  constructor(client, document) {
     super();
     this.customResolver = null;
     this.client = client;
-    this.queryDocument = queryDocument;
+    this.document = document;
     this.transformer = data => data;
     this.onFetchEntity = () => undefined;
     this.onFetchArrayOfEntities = () => undefined;
@@ -65,7 +65,7 @@ export default class Query extends AbstractQuery {
     if (!queryForVars) {
       const executeRequest = async () => {
         const client = await this.client;
-        return await client.request(this.queryDocument, variables);
+        return await client.request(this.document?.queryString, variables);
       };
       const onUnobservedStrategy = this.getOnUnobservedStrategy(variables);
       const options = this.getOptions(variables);

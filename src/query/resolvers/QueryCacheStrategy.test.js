@@ -103,7 +103,7 @@ afterEach(() => {
 describe('user resolver', () => {
   test('onUnobservedStrategy KEEP_UPDATING', async () => {
     const client = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
       }
     }
@@ -134,7 +134,7 @@ describe('user resolver', () => {
 
   test('onUnobservedStrategy PAUSE_UPDATING', async () => {
     const client = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
       }
     }
@@ -163,13 +163,13 @@ describe('user resolver', () => {
 
   test('store updates', async () => {
     const client1 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
       }
     }
 
     const client2 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'James' };
       }
     }
@@ -202,13 +202,13 @@ describe('user resolver', () => {
 
   test('store updates unrelated', async () => {
     const client1 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
       }
     }
 
     const client2 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person3', __typename: 'Person', name: 'James' };
       }
     }
@@ -241,13 +241,13 @@ describe('user resolver', () => {
 
   test('custom onStoreUpdate: prevent update', async () => {
     const client1 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
       }
     }
 
     const client2 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'James' };
       }
     }
@@ -285,13 +285,13 @@ describe('user resolver', () => {
 
   test('custom onStoreUpdate: update', async () => {
     const client1 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
       }
     }
 
     const client2 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'James' };
       }
     }
@@ -329,13 +329,13 @@ describe('user resolver', () => {
 
   test('custom onStoreUpdate: update unrelated', async () => {
     const client1 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
       }
     }
 
     const client2 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person3', __typename: 'Person', name: 'James' };
       }
     }
@@ -375,7 +375,7 @@ describe('user resolver', () => {
 describe('query cache', () => {
   test('onUnobservedStrategy KEEP_UPDATING', async () => {
     const client = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
       }
     }
@@ -397,7 +397,7 @@ describe('query cache', () => {
 
   test('onUnobservedStrategy PAUSE_UPDATING', async () => {
     const client = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
       }
     }
@@ -417,13 +417,13 @@ describe('query cache', () => {
 
   test('store updates', async () => {
     const client1 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
       }
     }
 
     const client2 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'James' };
       }
     }
@@ -449,13 +449,13 @@ describe('query cache', () => {
 
   test('store updates unrelated', async () => {
     const client1 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
       }
     }
 
     const client2 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person3', __typename: 'Person', name: 'James' };
       }
     }
@@ -478,13 +478,13 @@ describe('query cache', () => {
 
   test('custom onStoreUpdate: prevent update', async () => {
     const client1 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
       }
     }
 
     const client2 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'James' };
       }
     }
@@ -512,13 +512,13 @@ describe('query cache', () => {
 
   test('custom onStoreUpdate: update', async () => {
     const client1 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
       }
     }
 
     const client2 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'James' };
       }
     }
@@ -549,13 +549,13 @@ describe('query cache', () => {
 
   test('custom onStoreUpdate: update unrelated', async () => {
     const client1 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person2', __typename: 'Person', name: 'John' };
       }
     }
 
     const client2 = {
-      request(_queryDocument, _variables) {
+      request(_document, _variables) {
         return { id: 'person3', __typename: 'Person', name: 'James' };
       }
     }

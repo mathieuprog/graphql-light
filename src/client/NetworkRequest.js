@@ -1,7 +1,7 @@
 export default class NetworkRequest {
-  constructor(client, queryDocument) {
+  constructor(client, document) {
     this.client = client;
-    this.queryDocument = queryDocument;
+    this.document = document;
   }
 
   async execute(variables) {
@@ -10,6 +10,6 @@ export default class NetworkRequest {
     }
 
     const client = await this.client;
-    return await client.request(this.queryDocument, variables);
+    return await client.request(this.document?.queryString, variables);
   }
 }

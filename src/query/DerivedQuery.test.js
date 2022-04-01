@@ -108,13 +108,13 @@ test('DerivedQuery', async () => {
   const onStoreUpdate2 = jest.fn();
 
   const client1 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'John' };
     }
   }
 
   const client2 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'address1', __typename: 'Address', name: 'New street' };
     }
   }
@@ -168,7 +168,7 @@ test('DerivedQuery', async () => {
   const updater1 = jest.fn();
   const unsubscriber1 = jest.fn();
 
-  client1.request = (_queryDocument, _variables) => {
+  client1.request = (_document, _variables) => {
     return { id: 'person2', __typename: 'Person', name: 'James' };
   };
 
@@ -201,13 +201,13 @@ test('DerivedQuery with queries using query cache', async () => {
   const onStoreUpdate2 = jest.fn();
 
   const client1 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'John' };
     }
   }
 
   const client2 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'address1', __typename: 'Address', name: 'New street' };
     }
   }
@@ -255,7 +255,7 @@ test('DerivedQuery with queries using query cache', async () => {
   const updater1 = jest.fn();
   const unsubscriber1 = jest.fn();
 
-  client1.request = (_queryDocument, _variables) => {
+  client1.request = (_document, _variables) => {
     return { id: 'person2', __typename: 'Person', name: 'James' };
   };
 
@@ -278,7 +278,7 @@ test('DerivedQuery with queries using query cache', async () => {
 
 test('DerivedQuery with setOnQueryUpdate', async () => {
   const client = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return [
         { id: 'person1', __typename: 'Person', name: 'John' },
         { id: 'location1', __typename: 'Location', address: 'Foo street' },
@@ -310,7 +310,7 @@ test('DerivedQuery with setOnQueryUpdate', async () => {
   expect(resolver1).toHaveBeenCalledTimes(1);
   expect(resolver2).toHaveBeenCalledTimes(1);
 
-  client.request = (_queryDocument, _variables) => {
+  client.request = (_document, _variables) => {
     return { id: 'person1', __typename: 'Person', name: 'James' };
   };
 
@@ -319,7 +319,7 @@ test('DerivedQuery with setOnQueryUpdate', async () => {
   expect(resolver1).toHaveBeenCalledTimes(2);
   expect(resolver2).toHaveBeenCalledTimes(1);
 
-  client.request = (_queryDocument, _variables) => {
+  client.request = (_document, _variables) => {
     return { id: 'person2', __typename: 'Person', name: 'James' };
   };
 
@@ -328,7 +328,7 @@ test('DerivedQuery with setOnQueryUpdate', async () => {
   expect(resolver1).toHaveBeenCalledTimes(2);
   expect(resolver2).toHaveBeenCalledTimes(1);
 
-  client.request = (_queryDocument, _variables) => {
+  client.request = (_document, _variables) => {
     return { id: 'location1', __typename: 'Location', address: 'Bar street' };
   };
 
@@ -343,7 +343,7 @@ test('unsubscribe', async () => {
   const getUnsubscriber = jest.fn();
 
   const client = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return {};
     }
   }

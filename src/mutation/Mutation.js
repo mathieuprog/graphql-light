@@ -2,9 +2,9 @@ import store from '../store';
 
 export default class Mutation {
   // transformer: function transforming data before storage
-  constructor(client, queryDocument) {
+  constructor(client, document) {
     this.client = client;
-    this.queryDocument = queryDocument;
+    this.document = document;
     this.transformer = data => data;
     this.onFetchEntity = () => undefined;
     this.onFetchArrayOfEntities = () => undefined;
@@ -33,7 +33,7 @@ export default class Mutation {
     }
 
     const client = await this.client;
-    let data = await client.request(this.queryDocument, variables);
+    let data = await client.request(this.document?.queryString, variables);
 
     data = this.transformer(data, variables);
 

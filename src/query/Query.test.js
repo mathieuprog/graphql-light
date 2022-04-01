@@ -107,7 +107,7 @@ test('Query', async () => {
   const onStoreUpdate1 = jest.fn();
 
   const client1 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'John' };
     }
   }
@@ -175,7 +175,7 @@ test('Query', async () => {
   const updater5 = jest.fn();
   const unsubscriber5 = jest.fn();
 
-  client1.request = (_queryDocument, _variables) => {
+  client1.request = (_document, _variables) => {
     return { id: 'person2', __typename: 'Person', name: 'James' };
   };
 
@@ -194,7 +194,7 @@ test('Query', async () => {
   expect(updater5).toHaveBeenCalledTimes(0);
 
   const client6 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person' };
     }
   }
@@ -255,13 +255,13 @@ test('Query', async () => {
 
 test('unsubscribe then resubscribe', async () => {
   const client1 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'John' };
     }
   }
 
   const client2 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'James' };
     }
   }
@@ -291,7 +291,7 @@ test('unsubscribe', async () => {
   const getUnsubscriber = jest.fn();
 
   const client = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return {};
     }
   }
@@ -310,7 +310,7 @@ test('unsubscribe', async () => {
 
 test('clearWhenInactiveForDuration', async () => {
   const client = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return {};
     }
   }
@@ -341,7 +341,7 @@ test('refreshAfterDuration', async () => {
   const executeRequest = jest.fn();
 
   const client = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       executeRequest();
       return {};
     }
@@ -383,14 +383,14 @@ test('setDependentQueries', async () => {
   const resolver2 = jest.fn();
 
   const client1 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       request1();
       return { id: 'person2', __typename: 'Person', name: 'John' };
     }
   }
 
   const client2 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       request2();
       return { id: 'person2', __typename: 'Person', name: 'James' };
     }

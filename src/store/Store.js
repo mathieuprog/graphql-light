@@ -1,4 +1,3 @@
-// import transformServerData from './middleware/transformServerData';
 import proxifyReferences from './middleware/proxifyReferences';
 import normalize from './middleware/normalize';
 import updateLinks from './middleware/updateLinks';

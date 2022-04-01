@@ -172,7 +172,7 @@ afterEach(() => {
 
 test('applyUpdate (2)', async () => {
   const client = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return {
         id: 'person1',
         __typename: 'Person',
@@ -209,7 +209,7 @@ test('applyUpdate (2)', async () => {
   let queryForVars = query.getQueryForVars({});
   let queryCache = queryForVars.strategy.getCachedData();
 
-  client.request = (_queryDocument, _variables) => {
+  client.request = (_document, _variables) => {
     return {
       id: 'person1',
       __typename: 'Person',

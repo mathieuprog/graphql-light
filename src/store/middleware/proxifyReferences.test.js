@@ -538,7 +538,7 @@ test('fetch missing reference', async () => {
   await store.store({});
 
   const client = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return {
         id: 'address1',
         __typename: 'Address',
@@ -600,7 +600,7 @@ test('fetch missing reference in array', async () => {
   });
 
   const client = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return {
         id: 'address1',
         __typename: 'Address',

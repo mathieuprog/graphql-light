@@ -102,7 +102,7 @@ afterEach(() => {
 
 test('custom user resolver strategy', async () => {
   const client = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'John' };
     }
   };
@@ -152,7 +152,7 @@ test('custom user resolver strategy', async () => {
 
 test('onUnobservedStrategy KEEP_UPDATING', async () => {
   const client = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'John' };
     }
   }
@@ -183,7 +183,7 @@ test('onUnobservedStrategy KEEP_UPDATING', async () => {
 
 test('onUnobservedStrategy PAUSE_UPDATING', async () => {
   const client = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'John' };
     }
   }
@@ -212,13 +212,13 @@ test('onUnobservedStrategy PAUSE_UPDATING', async () => {
 
 test('store updates', async () => {
   const client1 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'John' };
     }
   }
 
   const client2 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'James' };
     }
   }
@@ -251,13 +251,13 @@ test('store updates', async () => {
 
 test('store updates unrelated', async () => {
   const client1 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'John' };
     }
   }
 
   const client2 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person3', __typename: 'Person', name: 'James' };
     }
   }
@@ -290,13 +290,13 @@ test('store updates unrelated', async () => {
 
 test('custom onStoreUpdate: prevent update', async () => {
   const client1 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'John' };
     }
   }
 
   const client2 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'James' };
     }
   }
@@ -334,13 +334,13 @@ test('custom onStoreUpdate: prevent update', async () => {
 
 test('custom onStoreUpdate: update', async () => {
   const client1 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'John' };
     }
   }
 
   const client2 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'James' };
     }
   }
@@ -378,13 +378,13 @@ test('custom onStoreUpdate: update', async () => {
 
 test('custom onStoreUpdate: update unrelated', async () => {
   const client1 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person2', __typename: 'Person', name: 'John' };
     }
   }
 
   const client2 = {
-    request(_queryDocument, _variables) {
+    request(_document, _variables) {
       return { id: 'person3', __typename: 'Person', name: 'James' };
     }
   }
