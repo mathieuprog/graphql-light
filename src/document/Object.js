@@ -8,11 +8,20 @@ export default class Object {
     this.type = type;
     this.name = name;
     this.options = options;
-    this.objects = [];
     this.variables = [];
-    this.scalars = ([ObjectType.ENTITY, ObjectType.ENTITY_LIST].includes(type))
-      ? ['id', '__typename']
-      : [];
+    this.objects = {};
+    this.foreignKeys = {};
+    this.scalars = {};
+    this.fields = {};
+    this.updateFilters = null;
+    this.handleEntityCreated = null;
+    this.handleEntityDeleted = null;
+    this.handleEntityUpdated = null;
+    this.toDelete = null;
+    if ([ObjectType.ENTITY, ObjectType.ENTITY_LIST].includes(type)) {
+      this.scalar('id');
+      this.scalar('__typename');
+    }
   }
 
   isRoot() {
@@ -20,7 +29,11 @@ export default class Object {
   }
 
   entity(name) {
-    return this.object(name, ObjectType.ENTITY);
+    return this.object_(name, ObjectType.ENTITY);
+  }
+
+  object(name) {
+    return this.object_(name, ObjectType.OBJECT_LITERAL);
   }
 
   entityList(name, arrayOperation) {
@@ -28,21 +41,28 @@ export default class Object {
       throw new Error();
     }
 
-    return this.object(name, ObjectType.ENTITY_LIST, { arrayOperation });
+    return this.object_(name, ObjectType.ENTITY_LIST, { arrayOperation });
   }
 
-  list(name) {
-    return this.object(name, ObjectType.LIST);
+  objectList(name) {
+    return this.object_(name, ObjectType.OBJECT_LITERAL_LIST);
   }
 
-  object(name, type, options = {}) {
+  object_(name, type, options = {}) {
     const object = new Object(this, type, name, options);
-    this.objects.push(object);
+    this.objects[name] = object;
     return object;
   }
 
-  scalar(name) {
-    this.scalars.push(name);
+  scalar(name, transformer = null) {
+    const scalar = { name, transformer };
+    this.scalars[name] = scalar;
+    return this;
+  }
+
+  foreignKey(name, referencedTypename, handleMissing = null) {
+    const foreignKey = { name, referencedTypename, handleMissing };
+    this.foreignKeys[name] = foreignKey;
     return this;
   }
 
@@ -57,7 +77,34 @@ export default class Object {
     return this;
   }
 
-  end() {
-    return this._;
+  filterUpdates(filters) {
+    this.updateFilters = filters;
+    return this;
   }
+
+  onEntityCreated(handler) {
+    this.handleEntityCreated = handler;
+    return this;
+  }
+
+  onEntityDeleted(handler) {
+    this.handleEntityDeleted = handler;
+    return this;
+  }
+
+  onEntityUpdated(handler) {
+    this.handleEntityUpdated = handler;
+    return this;
+  }
+
+  delete(toDelete) {
+    this.toDelete = toDelete;
+    return this;
+  }
+
+  end() { return this._; }
+  endEntity() { if (this.type !== ObjectType.ENTITY) { throw new Error(); } return this._; }
+  endEntityList() { if (this.type !== ObjectType.ENTITY_LIST) { throw new Error(); } return this._; }
+  endObject() { if (this.type !== ObjectType.OBJECT_LITERAL) { throw new Error(); } return this._; }
+  endObjectList() { if (this.type !== ObjectType.OBJECT_LITERAL_LIST) { throw new Error(); } return this._; }
 }

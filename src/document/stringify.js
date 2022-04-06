@@ -1,4 +1,4 @@
-import { isEmptyArray } from 'object-array-utils';
+import { isEmptyArray, isEmptyObjectLiteral } from 'object-array-utils';
 import OperationType from './constants/OperationType';
 
 export default function stringify(document) {
@@ -32,18 +32,25 @@ export default function stringify(document) {
 }
 
 function doStringify(str, objects) {
-  for (let object of objects) {
+  for (let [fieldName, object] of Object.entries(objects)) {
     if (!object.isRoot()) {
-      str += object.name;
+      str += fieldName;
 
       if (!isEmptyArray(object.variables)) {
         str += `(${object.variables.map((variable) => `${variable}:\$${variable}`).join(',')})`;
       }
     }
 
-    str += `{${object.scalars.join(' ')}`;
+    const scalarsStr = `${Object.keys(object.scalars).join(' ')}`;
+    const fkStr = `${Object.keys(object.foreignKeys).join(' ')}`;
 
-    if (!isEmptyArray(object.objects)) {
+    str += `{${scalarsStr}`;
+    if (scalarsStr && fkStr) {
+      str += ' ';
+    }
+    str += fkStr;
+
+    if (!isEmptyObjectLiteral(object.objects)) {
       str = doStringify(str + ' ', object.objects);
     }
 
