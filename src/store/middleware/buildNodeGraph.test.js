@@ -4,15 +4,30 @@ import Document from '../../document/Document';
 import buildNodeGraph from './buildNodeGraph';
 import createProxy from '../createProxy';
 
-test('buildNodeGraph', () => {
+test('buildNodeGraph', async () => {
+  const store = new Store();
+
+  const fetchMissingAccount = (accountId, _user) => {
+    store.entities = {
+      ...store.entities,
+      [accountId]: {
+        id: accountId,
+        __typename: 'Account',
+        loggedInAt: '2022-04-16'
+      }
+    };
+  };
+
   const document =
-    Document.query('operationName')
-      .scalar('foo')
+    Document.query()
+      .scalar('foo', Number)
       .entity('user')
         .scalar('name')
         .object('address')
           .scalar('street')._
-        .foreignKey('accountId', 'Account')
+        .entity('account')
+          .deriveFromForeignKey('accountId', fetchMissingAccount)
+          .scalar('loggedInAt')._
         .entityList('appointments', 'append')
           .scalar('date')
           .scalar('time')._._
@@ -28,7 +43,7 @@ test('buildNodeGraph', () => {
       address: {
         street: 'street'
       },
-      accountId: 'accountId',
+      accountId: 'account1',
       appointments: [
         { id: 'appointment1', __typename: 'Appointment', date: '2022-04-01', time: '10:00:00' },
         { id: 'appointment2', __typename: 'Appointment', date: '2022-04-02', time: '11:00:00' }
@@ -36,7 +51,6 @@ test('buildNodeGraph', () => {
     }
   };
 
-  const store = new Store();
   store.entities = {
     'user1': {
       name: 'Mathieu',
@@ -55,12 +69,12 @@ test('buildNodeGraph', () => {
     }
   };
 
-  const response = buildNodeGraph(data, document, store);
+  const response = await buildNodeGraph(document, data, store);
 
   const rootNode = response.rootNode;
 
   expect(Object.keys(rootNode.fields)).toEqual(['foo', 'bar', 'user']);
-  expect(rootNode.fields.foo).toBe('1');
+  expect(rootNode.fields.foo).toBe(1);
   expect(rootNode.fields.bar).toBe(2);
   expect(rootNode.meta.scalars.foo).toBeTruthy();
   expect(rootNode.meta.scalars.bar).toBeTruthy();
@@ -72,17 +86,24 @@ test('buildNodeGraph', () => {
 
   const userNode = rootNode.fields.user;
 
-  expect(Object.keys(userNode.fields)).toEqual(['id', '__typename', 'name', 'address', 'accountId', 'appointments']);
+  expect(Object.keys(userNode.fields)).toEqual(['id', '__typename', 'name', 'address', 'account', 'appointments']);
   expect(userNode.meta.scalars.id).toBeTruthy();
   expect(userNode.meta.scalars.__typename).toBeTruthy();
   expect(userNode.meta.scalars.name).toBeTruthy();
   expect(userNode.meta.objects.address).toBeTruthy();
-  expect(userNode.meta.foreignKeys.accountId).toBeTruthy();
   expect(userNode.meta.objects.appointments).toBeTruthy();
   expect(userNode.fetchCached().name).toBe('Mathieu');
   expect(userNode.meta.type).toBe(ObjectType.ENTITY);
   expect(userNode.meta.name).toBe('user');
-  expect(Object.keys(userNode.meta.objects).length).toBe(2);
+  expect(Object.keys(userNode.meta.objects).length).toBe(3);
+
+  const accountNode = userNode.fields.account;
+
+  expect(Object.keys(accountNode.fields)).toEqual(['id', '__typename', 'loggedInAt']);
+  expect(accountNode.fetchCached().loggedInAt).toBe('2022-04-16');
+  expect(accountNode.meta.type).toBe(ObjectType.ENTITY);
+  expect(accountNode.meta.name).toBe('account');
+  expect(Object.keys(accountNode.meta.objects).length).toBe(0);
 
   const appointmentNodes = userNode.fields.appointments;
 

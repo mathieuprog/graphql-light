@@ -10,12 +10,14 @@ test('stringify', () => {
       .variableDefinitions({ calendarId: 'ID!', dateRange: 'DateRange!' })
       .scalar('foo', Number)
       .entity('user')
-        .delete(false)
+        .delete()
         .scalar('name')
-        .foreignKey('accountId', 'Account', fetchMissingAccount)
+        .entity('account')
+          .deriveFromForeignKey('accountId', fetchMissingAccount)
+          .scalar('loggedInAt')._
         .entityList('appointments', 'append')
-          .delete(false)
           .useVariables('calendarId', 'dateRange')
+          .appendElements()
           .filterUpdates({
             objectTypes: ['Appointment'],
             updateTypes: ['create', 'delete'],
@@ -33,7 +35,7 @@ test('stringify', () => {
           .scalar('time')
           .object('bar')
             .scalar('name')._._
-        .entityList('availabilities', 'append')
+        .entityList('availabilities')
           .useVariables('calendarId', 'dateRange')
           .scalar('date')
           .scalar('time')._._

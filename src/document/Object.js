@@ -2,22 +2,20 @@ import { isArray, isArrayWhereEvery } from 'object-array-utils';
 import ObjectType from './constants/ObjectType';
 
 export default class Object {
-  constructor(parent, type, name, options = {}) {
+  constructor(parent, type, name) {
     // use of _ to refer to parent node was inspired by https://github.com/djeang/parent-chaining
     this._ = parent;
     this.type = type;
     this.name = name;
-    this.options = options;
     this.variables = [];
-    this.objects = {};
-    this.foreignKeys = {};
     this.scalars = {};
-    this.fields = {};
+    this.objects = {};
+    this.derivedFrom = null;
     this.updateFilters = null;
     this.handleEntityCreated = null;
     this.handleEntityDeleted = null;
     this.handleEntityUpdated = null;
-    this.toDelete = null;
+    this.isToBeDeleted = null;
     if ([ObjectType.ENTITY, ObjectType.ENTITY_LIST].includes(type)) {
       this.scalar('id');
       this.scalar('__typename');
@@ -28,6 +26,11 @@ export default class Object {
     return !this.name;
   }
 
+  scalar(name, transformer = ((v) => v)) {
+    this.scalars[name] = { name, transformer };
+    return this;
+  }
+
   entity(name) {
     return this.object_(name, ObjectType.ENTITY);
   }
@@ -36,34 +39,18 @@ export default class Object {
     return this.object_(name, ObjectType.OBJECT_LITERAL);
   }
 
-  entityList(name, arrayOperation) {
-    if (!['append', 'override', 'remove'].includes(arrayOperation)) {
-      throw new Error();
-    }
-
-    return this.object_(name, ObjectType.ENTITY_LIST, { arrayOperation });
+  entityList(name) {
+    return this.object_(name, ObjectType.ENTITY_LIST);
   }
 
   objectList(name) {
     return this.object_(name, ObjectType.OBJECT_LITERAL_LIST);
   }
 
-  object_(name, type, options = {}) {
-    const object = new Object(this, type, name, options);
+  object_(name, type) {
+    const object = new Object(this, type, name);
     this.objects[name] = object;
     return object;
-  }
-
-  scalar(name, transformer = null) {
-    const scalar = { name, transformer };
-    this.scalars[name] = scalar;
-    return this;
-  }
-
-  foreignKey(name, referencedTypename, handleMissing = null) {
-    const foreignKey = { name, referencedTypename, handleMissing };
-    this.foreignKeys[name] = foreignKey;
-    return this;
   }
 
   useVariables(...variables) {
@@ -97,8 +84,33 @@ export default class Object {
     return this;
   }
 
-  delete(toDelete) {
-    this.toDelete = toDelete;
+  deriveFromForeignKey(foreignKey, handleMissing = null) {
+    this.derivedFrom = { foreignKey, handleMissing };
+    return this;
+  }
+
+  appendElements() {
+    this.appendElements = true;
+    return this;
+  }
+
+  overrideElements() {
+    this.overrideElements = true;
+    return this;
+  }
+
+  removeElements() {
+    this.removeElements = true;
+    return this;
+  }
+
+  deleteElements() {
+    this.isToBeDeleted = true;
+    return this;
+  }
+
+  delete() {
+    this.isToBeDeleted = true;
     return this;
   }
 

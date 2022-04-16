@@ -1,4 +1,4 @@
-import { isEmptyArray, isEmptyObjectLiteral } from 'object-array-utils';
+import { isEmptyArray, isEmptyObjectLiteral, takeProperties } from 'object-array-utils';
 import OperationType from './constants/OperationType';
 
 export default function stringify(document) {
@@ -41,17 +41,18 @@ function doStringify(str, objects) {
       }
     }
 
-    const scalarsStr = `${Object.keys(object.scalars).join(' ')}`;
-    const fkStr = `${Object.keys(object.foreignKeys).join(' ')}`;
+    str += `{${Object.keys(object.scalars).join(' ')}`;
 
-    str += `{${scalarsStr}`;
-    if (scalarsStr && fkStr) {
-      str += ' ';
+    const { filtered: derivedObjects, rejected: objects } = takeProperties(object.objects, (_key, o) => o.derivedFrom);
+
+    if (!isEmptyObjectLiteral(derivedObjects)) {
+      for (let key in derivedObjects) {
+        str += ' ' + derivedObjects[key].derivedFrom.foreignKey;
+      }
     }
-    str += fkStr;
 
-    if (!isEmptyObjectLiteral(object.objects)) {
-      str = doStringify(str + ' ', object.objects);
+    if (!isEmptyObjectLiteral(objects)) {
+      str = doStringify(str + ' ', objects);
     }
 
     str += '}';
